@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "toyota-corolla-2018-1-6-benzin-otomatik",
+    "brand": "Toyota",
+    "model": "Corolla",
+    "year": 2018,
+    "engine": "1.6",
+    "fuelType": "Benzin",
+    "transmission": "Otomatik",
+    "bodyType": "Sedan",
+    "minPrice": 1000000,
+    "maxPrice": 1950000,
+    "averageFuel": 6.7,
+    "marketPopularity": 9,
+    "sparePartAvailability": 9,
+    "maintenanceCost": 6,
+    "secondHandValue": 9,
+    "chronicProblemScore": 8
+  },
+  {
+    "slug": "renault-megane-2018-1-5-dci-dizel-manuel",
+    "brand": "Renault",
+    "model": "Megane",
+    "year": 2018,
+    "engine": "1.5 dCi",
+    "fuelType": "Dizel",
+    "transmission": "Manuel",
+    "bodyType": "Sedan",
+    "minPrice": 650000,
+    "maxPrice": 1365000,
+    "averageFuel": 5.2,
+    "marketPopularity": 8,
+    "sparePartAvailability": 8,
+    "maintenanceCost": 7,
+    "secondHandValue": 7,
+    "chronicProblemScore": 6
+  }
+]

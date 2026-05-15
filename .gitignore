@@ -1,0 +1,6 @@
+node_modules
+.env
+src/config/firebaseServiceAccount.json
+src/config/firebaseServiceAccount.json.json
+npm-debug.log
+.DS_Store
