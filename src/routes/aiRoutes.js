@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const authMiddleware = require("../middlewares/authMiddleware");
+const { aiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 const { chatWithAI } = require("../controllers/aiController");
 
@@ -31,7 +32,6 @@ const { chatWithAI } = require("../controllers/aiController");
  *       401:
  *         description: Token bulunamadı veya geçersiz
  */
-
-router.post("/chat", authMiddleware, chatWithAI);
+router.post("/chat", aiLimiter, authMiddleware, chatWithAI);
 
 module.exports = router;

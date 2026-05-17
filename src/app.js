@@ -3,7 +3,7 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
 
-const apiLimiter = require("./middlewares/rateLimitMiddleware");
+const { apiLimiter } = require("./middlewares/rateLimitMiddleware");
 
 const carRoutes = require("./routes/carRoutes");
 const compareRoutes = require("./routes/compareRoutes");

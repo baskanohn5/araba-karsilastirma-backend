@@ -11,4 +11,18 @@ const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 
-module.exports = apiLimiter;
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: "AI kullanım limiti aşıldı. Lütfen daha sonra tekrar deneyin."
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+module.exports = {
+  apiLimiter,
+  aiLimiter
+};
