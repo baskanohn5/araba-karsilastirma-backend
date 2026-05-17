@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./docs/swagger");
 
 const carRoutes = require("./routes/carRoutes");
 const compareRoutes = require("./routes/compareRoutes");
@@ -29,6 +31,8 @@ app.get("/health", (req, res) => {
     timestamp: new Date()
   });
 });
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/cars", carRoutes);
 app.use("/api/compare", compareRoutes);
