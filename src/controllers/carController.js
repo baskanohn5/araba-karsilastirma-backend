@@ -58,7 +58,10 @@ const createCar = async (req, res) => {
   try {
     const carData = req.body;
 
-    const newCarRef = await db.collection("cars").add(carData);
+    const newCarRef = await db.collection("cars").add({
+      ...carData,
+      createdAt: new Date()
+    });
 
     res.status(201).json({
       success: true,
@@ -78,12 +81,28 @@ const createCar = async (req, res) => {
 
 const searchCars = async (req, res) => {
   try {
-    const { brand, fuelType, transmission, maxPrice } = req.query;
+    const {
+      brand,
+      model,
+      fuelType,
+      transmission,
+      bodyType,
+      engine,
+      minPrice,
+      maxPrice,
+      minYear,
+      maxYear,
+      maxFuel
+    } = req.query;
 
     let query = db.collection("cars");
 
     if (brand) {
       query = query.where("brand", "==", brand);
+    }
+
+    if (model) {
+      query = query.where("model", "==", model);
     }
 
     if (fuelType) {
@@ -94,22 +113,48 @@ const searchCars = async (req, res) => {
       query = query.where("transmission", "==", transmission);
     }
 
+    if (bodyType) {
+      query = query.where("bodyType", "==", bodyType);
+    }
+
+    if (engine) {
+      query = query.where("engine", "==", engine);
+    }
+
     const snapshot = await query.get();
 
     const cars = [];
 
     snapshot.forEach((doc) => {
-      const data = {
+      const car = {
         id: doc.id,
         ...doc.data()
       };
 
-      if (maxPrice) {
-        if (data.minPrice <= Number(maxPrice)) {
-          cars.push(data);
-        }
-      } else {
-        cars.push(data);
+      let isValid = true;
+
+      if (minPrice && car.maxPrice < Number(minPrice)) {
+        isValid = false;
+      }
+
+      if (maxPrice && car.minPrice > Number(maxPrice)) {
+        isValid = false;
+      }
+
+      if (minYear && car.year < Number(minYear)) {
+        isValid = false;
+      }
+
+      if (maxYear && car.year > Number(maxYear)) {
+        isValid = false;
+      }
+
+      if (maxFuel && car.averageFuel > Number(maxFuel)) {
+        isValid = false;
+      }
+
+      if (isValid) {
+        cars.push(car);
       }
     });
 
@@ -125,6 +170,7 @@ const searchCars = async (req, res) => {
     });
   }
 };
+
 const updateCar = async (req, res) => {
   try {
     const { id } = req.params;
@@ -185,6 +231,7 @@ const deleteCar = async (req, res) => {
     });
   }
 };
+
 module.exports = {
   getAllCars,
   getCarById,

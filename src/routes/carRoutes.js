@@ -133,23 +133,70 @@ router.put(
 
 /**
  * @swagger
- * /api/cars/{id}:
- *   delete:
- *     summary: Arabayı siler
+ * /api/cars/search:
+ *   get:
+ *     summary: Arabaları gelişmiş filtrelerle arar
  *     tags:
  *       - Cars
- *     security:
- *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
+ *       - in: query
+ *         name: brand
  *         schema:
  *           type: string
- *         description: Silinecek araba ID değeri
+ *         description: Marka filtresi
+ *       - in: query
+ *         name: model
+ *         schema:
+ *           type: string
+ *         description: Model filtresi
+ *       - in: query
+ *         name: fuelType
+ *         schema:
+ *           type: string
+ *         description: Yakıt tipi
+ *       - in: query
+ *         name: transmission
+ *         schema:
+ *           type: string
+ *         description: Vites tipi
+ *       - in: query
+ *         name: bodyType
+ *         schema:
+ *           type: string
+ *         description: Kasa tipi
+ *       - in: query
+ *         name: engine
+ *         schema:
+ *           type: string
+ *         description: Motor seçeneği
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum bütçe
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maksimum bütçe
+ *       - in: query
+ *         name: minYear
+ *         schema:
+ *           type: number
+ *         description: Minimum yıl
+ *       - in: query
+ *         name: maxYear
+ *         schema:
+ *           type: number
+ *         description: Maksimum yıl
+ *       - in: query
+ *         name: maxFuel
+ *         schema:
+ *           type: number
+ *         description: Maksimum yakıt tüketimi
  *     responses:
  *       200:
- *         description: Araba başarıyla silindi
+ *         description: Başarılı
  */
 router.delete(
   "/:id",
