@@ -8,17 +8,14 @@
     "fuelType": "Benzin",
     "transmission": "Otomatik",
     "bodyType": "Sedan",
-
     "minPrice": 1000000,
     "maxPrice": 1950000,
     "averageFuel": 6.7,
-
     "marketPopularity": 9,
     "sparePartAvailability": 9,
     "maintenanceCost": 6,
     "secondHandValue": 9,
     "chronicProblemScore": 8,
-
     "segment": "C Segment",
     "comfortScore": 8,
     "performanceScore": 7,
@@ -28,10 +25,45 @@
     "longRoadScore": 9,
     "horsePower": 132,
     "trunkVolume": 470,
-
-    "imageUrl": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8"
+    "equipment": {
+      "multimedia": true,
+      "appleCarPlay": false,
+      "androidAuto": false,
+      "sunroof": false,
+      "leatherSeat": false,
+      "adaptiveCruiseControl": false,
+      "laneAssist": false,
+      "blindSpotWarning": false,
+      "rearCamera": true,
+      "parkingSensor": true,
+      "digitalDisplay": false,
+      "automaticClimate": true
+    },
+    "pros": [
+      "İkinci el değeri güçlü",
+      "Genel sorunsuzluk algısı yüksek",
+      "Aile kullanımı için uygun",
+      "Parça ve servis erişimi kolay"
+    ],
+    "cons": [
+      "Performans beklentisi yüksek kullanıcılar için sınırlı kalabilir",
+      "Donanım seviyesi pakete göre değişebilir",
+      "Yol ve rüzgar sesi bazı kullanıcılar için rahatsız edici olabilir"
+    ],
+    "commonComplaints": [
+      "Yol ve rüzgar sesi şikayetleri",
+      "Bazı kullanıcılarda trim sesleri",
+      "Boya/kaporta hassasiyeti şikayetleri",
+      "Klima klape veya sıcak-soğuk dengesizliği şikayetleri",
+      "Direksiyon kutusu/ön takım sesleri kontrol edilmelidir"
+    ],
+    "recommendedUsage": [
+      "Aile kullanımı",
+      "Şehir içi kullanım",
+      "Düşük riskli ikinci el tercih edenler",
+      "Uzun süre sorunsuz kullanım arayanlar"
+    ]
   },
-
   {
     "slug": "renault-megane-2018-1-5-dci-dizel-manuel",
     "brand": "Renault",
@@ -41,17 +73,14 @@
     "fuelType": "Dizel",
     "transmission": "Manuel",
     "bodyType": "Sedan",
-
     "minPrice": 650000,
     "maxPrice": 1365000,
     "averageFuel": 5.2,
-
     "marketPopularity": 8,
     "sparePartAvailability": 8,
     "maintenanceCost": 7,
     "secondHandValue": 7,
     "chronicProblemScore": 6,
-
     "segment": "C Segment",
     "comfortScore": 7,
     "performanceScore": 6,
@@ -61,7 +90,238 @@
     "longRoadScore": 8,
     "horsePower": 110,
     "trunkVolume": 503,
-
-    "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
+    "equipment": {
+      "multimedia": true,
+      "appleCarPlay": false,
+      "androidAuto": false,
+      "sunroof": false,
+      "leatherSeat": false,
+      "adaptiveCruiseControl": false,
+      "laneAssist": false,
+      "blindSpotWarning": false,
+      "rearCamera": true,
+      "parkingSensor": true,
+      "digitalDisplay": false,
+      "automaticClimate": true
+    },
+    "pros": [
+      "Yakıt ekonomisi güçlü",
+      "Bagaj hacmi aile kullanımı için iyi",
+      "Şehir içi kullanıma uygun",
+      "Parça bulunabilirliği iyi"
+    ],
+    "cons": [
+      "Manuel vites herkese uygun olmayabilir",
+      "Elektronik ve trim şikayetleri kontrol edilmelidir",
+      "Bakım geçmişi dizel motor için önemlidir"
+    ],
+    "commonComplaints": [
+      "EGR/DPF hassasiyeti",
+      "Turbo hortumu ve enjektör sesi kontrol edilmelidir",
+      "Elektrik/ekran sorunları şikayetleri",
+      "Trim ve rüzgar sesi şikayetleri",
+      "Bagaj veya arka bölümden su alma şikayetleri görülebilir"
+    ],
+    "recommendedUsage": [
+      "Az yakan aile aracı isteyenler",
+      "Şehir içi ve uzun yol karışık kullanım",
+      "Dizel ekonomi öncelikli kullanıcılar",
+      "Uygun bütçeli sedan arayanlar"
+    ]
+  },
+  {
+    "slug": "honda-civic-2019-1-6-dizel-otomatik",
+    "brand": "Honda",
+    "model": "Civic",
+    "year": 2019,
+    "engine": "1.6 i-DTEC",
+    "fuelType": "Dizel",
+    "transmission": "Otomatik",
+    "bodyType": "Sedan",
+    "minPrice": 900000,
+    "maxPrice": 1700000,
+    "averageFuel": 4.5,
+    "marketPopularity": 9,
+    "sparePartAvailability": 8,
+    "maintenanceCost": 6,
+    "secondHandValue": 9,
+    "chronicProblemScore": 8,
+    "segment": "C Segment",
+    "comfortScore": 8,
+    "performanceScore": 8,
+    "safetyScore": 9,
+    "familyFriendly": true,
+    "cityUseScore": 8,
+    "longRoadScore": 9,
+    "horsePower": 120,
+    "trunkVolume": 519,
+    "equipment": {
+      "multimedia": true,
+      "appleCarPlay": false,
+      "androidAuto": false,
+      "sunroof": true,
+      "leatherSeat": false,
+      "adaptiveCruiseControl": false,
+      "laneAssist": false,
+      "blindSpotWarning": false,
+      "rearCamera": true,
+      "parkingSensor": true,
+      "digitalDisplay": true,
+      "automaticClimate": true
+    },
+    "pros": [
+      "Yakıt tüketimi düşük",
+      "İkinci el değeri güçlü",
+      "Performans ve ekonomi dengesi iyi",
+      "Aile kullanımı için geniş bagaj sunar"
+    ],
+    "cons": [
+      "Yol ve lastik sesi bazı kullanıcılar için yüksek olabilir",
+      "Süspansiyon hissi sert gelebilir",
+      "Donanım pakete göre değişebilir"
+    ],
+    "commonComplaints": [
+      "Yol ve lastik sesi şikayetleri",
+      "Sert süspansiyon hissi",
+      "Klima sistemi şikayetleri",
+      "Multimedya donması şikayetleri",
+      "Park sensörü ve küçük elektronik arızalar kontrol edilmelidir"
+    ],
+    "recommendedUsage": [
+      "Az yakan otomatik sedan isteyenler",
+      "Aile kullanımı",
+      "Uzun yol kullanımı",
+      "İkinci el değeri güçlü araç arayanlar"
+    ]
+  },
+  {
+    "slug": "volkswagen-passat-2017-1-6-tdi-dsg",
+    "brand": "Volkswagen",
+    "model": "Passat",
+    "year": 2017,
+    "engine": "1.6 TDI",
+    "fuelType": "Dizel",
+    "transmission": "Otomatik",
+    "bodyType": "Sedan",
+    "minPrice": 1000000,
+    "maxPrice": 2655000,
+    "averageFuel": 5.0,
+    "marketPopularity": 9,
+    "sparePartAvailability": 8,
+    "maintenanceCost": 5,
+    "secondHandValue": 9,
+    "chronicProblemScore": 6,
+    "segment": "D Segment",
+    "comfortScore": 9,
+    "performanceScore": 7,
+    "safetyScore": 9,
+    "familyFriendly": true,
+    "cityUseScore": 7,
+    "longRoadScore": 10,
+    "horsePower": 120,
+    "trunkVolume": 586,
+    "equipment": {
+      "multimedia": true,
+      "appleCarPlay": false,
+      "androidAuto": false,
+      "sunroof": false,
+      "leatherSeat": true,
+      "adaptiveCruiseControl": false,
+      "laneAssist": false,
+      "blindSpotWarning": false,
+      "rearCamera": true,
+      "parkingSensor": true,
+      "digitalDisplay": false,
+      "automaticClimate": true
+    },
+    "pros": [
+      "Uzun yol konforu çok güçlü",
+      "Bagaj hacmi geniş",
+      "İkinci el piyasası güçlü",
+      "Aile ve iş kullanımı için uygun"
+    ],
+    "cons": [
+      "Bakım maliyeti daha yüksek olabilir",
+      "DSG geçmişi mutlaka kontrol edilmelidir",
+      "Şehir içinde büyük gövde dezavantaj olabilir"
+    ],
+    "commonComplaints": [
+      "DSG kavrama/mekatronik masraf riski",
+      "DPF ve EGR tıkanma ihtimali",
+      "Elektronik modül arızaları kontrol edilmelidir",
+      "Yüksek bakım maliyetleri",
+      "Uzun kullanımda trim sesleri görülebilir"
+    ],
+    "recommendedUsage": [
+      "Uzun yol",
+      "Aile kullanımı",
+      "Konfor öncelikli kullanıcılar",
+      "Geniş bagaj ihtiyacı olanlar"
+    ]
+  },
+  {
+    "slug": "fiat-egea-2020-1-3-multijet-manuel",
+    "brand": "Fiat",
+    "model": "Egea",
+    "year": 2020,
+    "engine": "1.3 Multijet",
+    "fuelType": "Dizel",
+    "transmission": "Manuel",
+    "bodyType": "Sedan",
+    "minPrice": 350000,
+    "maxPrice": 1430000,
+    "averageFuel": 4.9,
+    "marketPopularity": 10,
+    "sparePartAvailability": 10,
+    "maintenanceCost": 9,
+    "secondHandValue": 8,
+    "chronicProblemScore": 7,
+    "segment": "C Segment",
+    "comfortScore": 7,
+    "performanceScore": 6,
+    "safetyScore": 7,
+    "familyFriendly": true,
+    "cityUseScore": 9,
+    "longRoadScore": 7,
+    "horsePower": 95,
+    "trunkVolume": 520,
+    "equipment": {
+      "multimedia": true,
+      "appleCarPlay": false,
+      "androidAuto": false,
+      "sunroof": false,
+      "leatherSeat": false,
+      "adaptiveCruiseControl": false,
+      "laneAssist": false,
+      "blindSpotWarning": false,
+      "rearCamera": false,
+      "parkingSensor": true,
+      "digitalDisplay": false,
+      "automaticClimate": false
+    },
+    "pros": [
+      "Bakım maliyeti uygun",
+      "Parça bulunabilirliği çok güçlü",
+      "Yakıt tüketimi düşük",
+      "Geniş bagaj hacmi sunar"
+    ],
+    "cons": [
+      "Konfor ve yalıtım seviyesi rakiplerinden düşük olabilir",
+      "Manuel vites herkes için uygun olmayabilir",
+      "İç plastik kalite algısı sınırlı olabilir"
+    ],
+    "commonComplaints": [
+      "Trim ve plastik kalite şikayetleri",
+      "Rölanti dalgalanması",
+      "DPF tıkanma ihtimali",
+      "Turbo hortumu ve EGR sorunları kontrol edilmelidir",
+      "Yalıtım ve yol sesi şikayetleri"
+    ],
+    "recommendedUsage": [
+      "Ekonomik aile aracı",
+      "Şehir içi kullanım",
+      "Düşük bakım maliyeti isteyenler",
+      "Parça ve servis kolaylığı isteyenler"
+    ]
   }
 ]

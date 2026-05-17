@@ -18,23 +18,41 @@ const getCarsFromDatabase = async () => {
   return cars;
 };
 
-const chatWithAI = async (req, res) => {
-  try {
-    const { message } = req.body;
-    const userId = req.user.uid;
+const formatEquipment = (equipment = {}) => {
+  const labels = {
+    multimedia: "Multimedya",
+    appleCarPlay: "Apple CarPlay",
+    androidAuto: "Android Auto",
+    sunroof: "Sunroof",
+    leatherSeat: "Deri Koltuk",
+    adaptiveCruiseControl: "Adaptif hız sabitleyici",
+    laneAssist: "Şerit takip",
+    blindSpotWarning: "Kör nokta uyarı",
+    rearCamera: "Geri görüş kamerası",
+    parkingSensor: "Park sensörü",
+    digitalDisplay: "Dijital gösterge",
+    automaticClimate: "Otomatik klima"
+  };
 
-    if (!message) {
-      return res.status(400).json({
-        success: false,
-        message: "Mesaj alanı zorunludur"
-      });
-    }
+  return Object.entries(labels)
+    .map(([key, label]) => {
+      return `${label}: ${equipment[key] ? "Var" : "Yok"}`;
+    })
+    .join("\n");
+};
 
-    const cars = await getCarsFromDatabase();
+const formatList = (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "Bilgi yok";
+  }
 
-    const carDataText = cars
-      .map((car) => {
-        return `
+  return items.map((item) => `- ${item}`).join("\n");
+};
+
+const createCarDataText = (cars) => {
+  return cars
+    .map((car) => {
+      return `
 Araç ID: ${car.id}
 Marka: ${car.brand}
 Model: ${car.model}
@@ -59,9 +77,40 @@ Aile Kullanımı: ${car.familyFriendly ? "Uygun" : "Uygun değil"}
 Uzun Yol: ${car.longRoadScore || 0}/10
 Beygir: ${car.horsePower || 0} HP
 Bagaj: ${car.trunkVolume || 0} L
+
+Donanım:
+${formatEquipment(car.equipment)}
+
+Artılar:
+${formatList(car.pros)}
+
+Eksiler:
+${formatList(car.cons)}
+
+Yaygın Kullanıcı Şikayetleri:
+${formatList(car.commonComplaints)}
+
+Önerilen Kullanım Tipi:
+${formatList(car.recommendedUsage)}
 `;
-      })
-      .join("\n----------------------\n");
+    })
+    .join("\n----------------------\n");
+};
+
+const chatWithAI = async (req, res) => {
+  try {
+    const { message } = req.body;
+    const userId = req.user.uid;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Mesaj alanı zorunludur"
+      });
+    }
+
+    const cars = await getCarsFromDatabase();
+    const carDataText = createCarDataText(cars);
 
     const aiResponse = await axios.post(
       DEEPSEEK_API_URL,
@@ -73,10 +122,12 @@ Bagaj: ${car.trunkVolume || 0} L
             content: `
 Sen AutoCompare uygulamasının araç danışmanı yapay zekasısın.
 
-Sadece aşağıdaki araç verilerine göre cevap ver.
-Veritabanında olmayan araçları kesin önerme.
-Fiyatların güncel olmayabileceğini belirt.
-Kullanıcının bütçe, yakıt, konfor, aile kullanımı, şehir içi, uzun yol, bakım maliyeti ve kronik sorun beklentisine göre açıklama yap.
+Kurallar:
+- Sadece aşağıdaki veritabanındaki araçlara göre cevap ver.
+- Veritabanında olmayan aracı kesinlikle önerme.
+- Fiyatların değişebileceğini belirt.
+- Kullanıcının bütçe, yakıt, konfor, donanım, güvenlik, aile kullanımı, şehir içi, uzun yol, bakım maliyeti ve yaygın kullanıcı şikayetleri beklentisine göre açıklama yap.
+- Yaygın kullanıcı şikayetlerini "kesin arıza" gibi değil, "satın almadan önce kontrol edilmesi gereken noktalar" olarak anlat.
 
 Araç verileri:
 ${carDataText}
@@ -142,36 +193,7 @@ const recommendCars = async (req, res) => {
       });
     }
 
-    const carDataText = cars
-      .map((car) => {
-        return `
-Araç ID: ${car.id}
-Marka: ${car.brand}
-Model: ${car.model}
-Yıl: ${car.year}
-Motor: ${car.engine}
-Yakıt: ${car.fuelType}
-Vites: ${car.transmission}
-Kasa: ${car.bodyType}
-Fiyat: ${car.minPrice} - ${car.maxPrice} TL
-Yakıt Tüketimi: ${car.averageFuel} L/100 km
-Tutulma: ${car.marketPopularity}/10
-Parça Bulunabilirliği: ${car.sparePartAvailability}/10
-Bakım Maliyeti: ${car.maintenanceCost}/10
-İkinci El Değeri: ${car.secondHandValue}/10
-Kronik Sorun Puanı: ${car.chronicProblemScore}/10
-Segment: ${car.segment || "Bilinmiyor"}
-Konfor: ${car.comfortScore || 0}/10
-Performans: ${car.performanceScore || 0}/10
-Güvenlik: ${car.safetyScore || 0}/10
-Aile Kullanımı: ${car.familyFriendly ? "Uygun" : "Uygun değil"}
-Şehir İçi: ${car.cityUseScore || 0}/10
-Uzun Yol: ${car.longRoadScore || 0}/10
-Beygir: ${car.horsePower || 0} HP
-Bagaj: ${car.trunkVolume || 0} L
-`;
-      })
-      .join("\n----------------------\n");
+    const carDataText = createCarDataText(cars);
 
     const aiResponse = await axios.post(
       DEEPSEEK_API_URL,
@@ -184,24 +206,29 @@ Bagaj: ${car.trunkVolume || 0} L
 Sen AutoCompare uygulamasının profesyonel araç öneri motorusun.
 
 Görevin:
-Kullanıcının ihtiyacını analiz et.
-Sadece veritabanındaki araçlardan öneri yap.
-Veritabanında olmayan araçları önerme.
-En uygun aracı veya araçları seç.
-Neden seçtiğini sade Türkçe ile açıkla.
-Fiyatların değişebileceğini mutlaka belirt.
+- Kullanıcının ihtiyacını analiz et.
+- Sadece veritabanındaki araçlardan öneri yap.
+- Veritabanında olmayan araçları önerme.
+- Kullanıcının bütçe, yakıt, donanım, güvenlik, konfor, aile kullanımı, şehir içi, uzun yol ve bakım beklentisine göre en uygun aracı seç.
+- Donanım bilgilerini dikkate al.
+- Yaygın kullanıcı şikayetlerini açıkça ama dikkatli anlat.
+- Şikayetleri kesin arıza gibi sunma; "satın almadan önce kontrol edilmeli" şeklinde belirt.
+- Fiyatların değişebileceğini mutlaka belirt.
 
 Cevap formatın şu şekilde olsun:
 
 1. En uygun öneri:
 - Araç:
 - Neden uygun:
+- Donanım açısından:
+- Güvenlik/konfor açısından:
 - Güçlü yönleri:
-- Dikkat edilmesi gerekenler:
+- Dikkat edilmesi gereken kullanıcı şikayetleri:
 
 2. Alternatif:
 - Araç:
 - Neden alternatif:
+- Dikkat edilmesi gerekenler:
 
 3. Kısa sonuç:
 - Kullanıcının ihtiyacına göre net öneri.
