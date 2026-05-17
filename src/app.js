@@ -3,6 +3,8 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./docs/swagger");
 
+const apiLimiter = require("./middlewares/rateLimitMiddleware");
+
 const carRoutes = require("./routes/carRoutes");
 const compareRoutes = require("./routes/compareRoutes");
 const aiRoutes = require("./routes/aiRoutes");
@@ -15,6 +17,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(apiLimiter);
 
 app.get("/", (req, res) => {
   res.json({
