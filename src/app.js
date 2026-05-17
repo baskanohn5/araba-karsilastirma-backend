@@ -15,14 +15,23 @@ const errorMiddleware = require("./middlewares/errorMiddleware");
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+
+
 app.use(express.json());
-app.use(apiLimiter);
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Araba Karşılaştırma API çalışıyor"
+    message: "AutoCompare API çalışıyor",
   });
 });
 
@@ -31,11 +40,13 @@ app.get("/health", (req, res) => {
     success: true,
     status: "OK",
     uptime: process.uptime(),
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use(apiLimiter);
 
 app.use("/api/cars", carRoutes);
 app.use("/api/compare", compareRoutes);

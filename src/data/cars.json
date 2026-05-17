@@ -8,15 +8,30 @@
     "fuelType": "Benzin",
     "transmission": "Otomatik",
     "bodyType": "Sedan",
+
     "minPrice": 1000000,
     "maxPrice": 1950000,
     "averageFuel": 6.7,
+
     "marketPopularity": 9,
     "sparePartAvailability": 9,
     "maintenanceCost": 6,
     "secondHandValue": 9,
-    "chronicProblemScore": 8
+    "chronicProblemScore": 8,
+
+    "segment": "C Segment",
+    "comfortScore": 8,
+    "performanceScore": 7,
+    "safetyScore": 9,
+    "familyFriendly": true,
+    "cityUseScore": 8,
+    "longRoadScore": 9,
+    "horsePower": 132,
+    "trunkVolume": 470,
+
+    "imageUrl": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8"
   },
+
   {
     "slug": "renault-megane-2018-1-5-dci-dizel-manuel",
     "brand": "Renault",
@@ -26,13 +41,27 @@
     "fuelType": "Dizel",
     "transmission": "Manuel",
     "bodyType": "Sedan",
+
     "minPrice": 650000,
     "maxPrice": 1365000,
     "averageFuel": 5.2,
+
     "marketPopularity": 8,
     "sparePartAvailability": 8,
     "maintenanceCost": 7,
     "secondHandValue": 7,
-    "chronicProblemScore": 6
+    "chronicProblemScore": 6,
+
+    "segment": "C Segment",
+    "comfortScore": 7,
+    "performanceScore": 6,
+    "safetyScore": 8,
+    "familyFriendly": true,
+    "cityUseScore": 9,
+    "longRoadScore": 8,
+    "horsePower": 110,
+    "trunkVolume": 503,
+
+    "imageUrl": "https://images.unsplash.com/photo-1503376780353-7e6692767b70"
   }
 ]
