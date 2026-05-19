@@ -10,6 +10,7 @@ const compareRoutes = require("./routes/compareRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const favoriteRoutes = require("./routes/favoriteRoutes");
 const chatHistoryRoutes = require("./routes/chatHistoryRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
@@ -24,8 +25,6 @@ app.use(
   })
 );
 
-
-
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -36,11 +35,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
     status: "OK",
     uptime: process.uptime(),
-    timestamp: new Date(),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -53,6 +52,7 @@ app.use("/api/compare", compareRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/chat-history", chatHistoryRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.use(errorMiddleware);
 
