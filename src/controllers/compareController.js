@@ -20,6 +20,109 @@ const compareNumber = (car1Value, car2Value, higherIsBetter = true) => {
     : { car1Point: 0, car2Point: 10 };
 };
 
+const carName = (car) => {
+  return `${car.brand} ${car.model} ${car.year} ${car.engine} ${car.fuelType} ${car.transmission}`;
+};
+
+const listText = (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "Bilgi yok";
+  }
+
+  return items.join(", ");
+};
+
+const createDetailedComment = ({
+  car1,
+  car2,
+  car1Score,
+  car2Score,
+  winner
+}) => {
+  const car1FullName = carName(car1);
+  const car2FullName = carName(car2);
+
+  const fuelWinner =
+    car1.averageFuel < car2.averageFuel
+      ? car1FullName
+      : car2.averageFuel < car1.averageFuel
+        ? car2FullName
+        : "İki araç da benzer";
+
+  const comfortWinner =
+    car1.comfortScore > car2.comfortScore
+      ? car1FullName
+      : car2.comfortScore > car1.comfortScore
+        ? car2FullName
+        : "İki araç da benzer";
+
+  const safetyWinner =
+    car1.safetyScore > car2.safetyScore
+      ? car1FullName
+      : car2.safetyScore > car1.safetyScore
+        ? car2FullName
+        : "İki araç da benzer";
+
+  const longRoadWinner =
+    car1.longRoadScore > car2.longRoadScore
+      ? car1FullName
+      : car2.longRoadScore > car1.longRoadScore
+        ? car2FullName
+        : "İki araç da benzer";
+
+  const maintenanceWinner =
+    car1.maintenanceCost < car2.maintenanceCost
+      ? car1FullName
+      : car2.maintenanceCost < car1.maintenanceCost
+        ? car2FullName
+        : "İki araç da benzer";
+
+  if (winner === "Berabere") {
+    return `
+İki araç genel puanlamada birbirine yakın görünüyor.
+
+${car1FullName}, artıları bakımından şu noktalarda öne çıkıyor: ${listText(car1.pros)}.
+Dikkat edilmesi gereken yönleri: ${listText(car1.cons)}.
+Yaygın kullanıcı şikayetleri açısından kontrol edilmesi gerekenler: ${listText(car1.commonComplaints)}.
+
+${car2FullName}, artıları bakımından şu noktalarda öne çıkıyor: ${listText(car2.pros)}.
+Dikkat edilmesi gereken yönleri: ${listText(car2.cons)}.
+Yaygın kullanıcı şikayetleri açısından kontrol edilmesi gerekenler: ${listText(car2.commonComplaints)}.
+
+Yakıt ekonomisinde: ${fuelWinner}.
+Konforda: ${comfortWinner}.
+Güvenlikte: ${safetyWinner}.
+Uzun yolda: ${longRoadWinner}.
+Bakım maliyeti tarafında: ${maintenanceWinner}.
+
+Sonuç olarak karar, kullanım amacına göre verilmelidir. Şehir içi ve düşük tüketim öncelikliyse yakıt tüketimi ve bakım maliyeti; aile ve uzun yol öncelikliyse konfor, güvenlik, bagaj hacmi ve ikinci el değeri daha önemli olmalıdır. Satın almadan önce ekspertiz, bakım geçmişi ve hasar kaydı mutlaka kontrol edilmelidir.
+`.trim();
+  }
+
+  return `
+Genel puanlamaya göre ${winner} daha avantajlı görünüyor.
+
+${car1FullName} toplam ${car1Score} puan aldı.
+${car2FullName} toplam ${car2Score} puan aldı.
+
+Yakıt ekonomisinde: ${fuelWinner}.
+Konforda: ${comfortWinner}.
+Güvenlikte: ${safetyWinner}.
+Uzun yol kullanımında: ${longRoadWinner}.
+Bakım maliyeti açısından: ${maintenanceWinner}.
+
+${car1FullName} için güçlü yönler: ${listText(car1.pros)}.
+${car1FullName} için dikkat edilmesi gerekenler: ${listText(car1.cons)}.
+${car1FullName} yaygın kullanıcı şikayetleri: ${listText(car1.commonComplaints)}.
+
+${car2FullName} için güçlü yönler: ${listText(car2.pros)}.
+${car2FullName} için dikkat edilmesi gerekenler: ${listText(car2.cons)}.
+${car2FullName} yaygın kullanıcı şikayetleri: ${listText(car2.commonComplaints)}.
+
+Kısa sonuç: ${winner}, genel skor, kullanım uygunluğu ve piyasa avantajlarıyla daha mantıklı seçenek gibi duruyor. Yine de gerçek ilan özelinde kilometre, boya/değişen durumu, tramer kaydı, bakım geçmişi ve ekspertiz sonucu karar üzerinde belirleyici olur. Fiyatlar ve araç kondisyonu değişebileceği için güncel ilan kontrolü ve bağımsız ekspertiz önerilir.
+`.trim();
+};
+
 const compareCars = async (req, res) => {
   try {
     const { car1Id, car2Id } = req.body;
@@ -98,6 +201,42 @@ const compareCars = async (req, res) => {
         field: "minPrice",
         higherIsBetter: false,
         unit: "TL"
+      },
+      {
+        label: "Konfor",
+        field: "comfortScore",
+        higherIsBetter: true,
+        unit: "/10"
+      },
+      {
+        label: "Performans",
+        field: "performanceScore",
+        higherIsBetter: true,
+        unit: "/10"
+      },
+      {
+        label: "Güvenlik",
+        field: "safetyScore",
+        higherIsBetter: true,
+        unit: "/10"
+      },
+      {
+        label: "Şehir içi kullanım",
+        field: "cityUseScore",
+        higherIsBetter: true,
+        unit: "/10"
+      },
+      {
+        label: "Uzun yol",
+        field: "longRoadScore",
+        higherIsBetter: true,
+        unit: "/10"
+      },
+      {
+        label: "Bagaj hacmi",
+        field: "trunkVolume",
+        higherIsBetter: true,
+        unit: "L"
       }
     ];
 
@@ -129,22 +268,25 @@ const compareCars = async (req, res) => {
       winner = `${car2.brand} ${car2.model} ${car2.engine}`;
     }
 
-    const comment =
-      winner === "Berabere"
-        ? "İki araç genel olarak birbirine yakın görünüyor. Kullanım amacı ve bütçeye göre karar verilmelidir."
-        : `${winner} genel puanlamaya göre daha avantajlı görünüyor. Yine de fiyatlar ve araç kondisyonu değişebileceği için ekspertiz ve güncel ilan kontrolü önerilir.`;
+    const comment = createDetailedComment({
+      car1,
+      car2,
+      car1Score,
+      car2Score,
+      winner
+    });
 
     res.json({
       success: true,
       data: {
         car1: {
           id: car1.id,
-          name: `${car1.brand} ${car1.model} ${car1.year} ${car1.engine} ${car1.fuelType} ${car1.transmission}`,
+          name: carName(car1),
           score: car1Score
         },
         car2: {
           id: car2.id,
-          name: `${car2.brand} ${car2.model} ${car2.year} ${car2.engine} ${car2.fuelType} ${car2.transmission}`,
+          name: carName(car2),
           score: car2Score
         },
         winner,
