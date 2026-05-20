@@ -313,6 +313,7 @@ const saveCompareResult = async (req, res) => {
       comment,
     } = req.body;
 
+
     if (!userId || !car1Id || !car2Id) {
       return res.status(400).json({
         success: false,
@@ -352,8 +353,41 @@ const saveCompareResult = async (req, res) => {
     });
   }
 };
+const getUserCompareResults = async (req, res) => {
+  try {
+    const { userId } = req.params;
 
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "userId zorunludur",
+      });
+    }
+
+    const snapshot = await db
+      .collection("compareResults")
+      .where("userId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .get();
+
+    const results = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.json({
+      success: true,
+      data: results,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 module.exports = {
   compareCars,
   saveCompareResult,
+  getUserCompareResults,
 };
