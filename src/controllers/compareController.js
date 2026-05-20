@@ -367,13 +367,16 @@ const getUserCompareResults = async (req, res) => {
     const snapshot = await db
       .collection("compareResults")
       .where("userId", "==", userId)
-      .orderBy("createdAt", "desc")
       .get();
 
-    const results = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const results = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
 
     res.json({
       success: true,
@@ -389,5 +392,4 @@ const getUserCompareResults = async (req, res) => {
 module.exports = {
   compareCars,
   saveCompareResult,
-  getUserCompareResults,
 };
