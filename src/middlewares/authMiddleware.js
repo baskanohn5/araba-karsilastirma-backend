@@ -2,31 +2,45 @@ const admin = require("firebase-admin");
 
 const authMiddleware = async (req, res, next) => {
   try {
-
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        message: "Token bulunamadı"
+        message: "Token bulunamadı",
       });
     }
 
-    const token = authHeader.split("Bearer ")[1];
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Geçersiz token formatı",
+      });
+    }
 
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const token = authHeader.replace("Bearer ", "").trim();
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Token boş",
+      });
+    }
+
+    const decodedToken =
+      await admin.auth().verifyIdToken(token);
 
     req.user = decodedToken;
 
     next();
-
   } catch (error) {
+    console.error("AUTH ERROR:", error);
 
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
-      message: "Geçersiz token"
+      message: "Geçersiz token",
+      error: error.message,
     });
-
   }
 };
 
