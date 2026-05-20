@@ -245,9 +245,34 @@ const getUserCompareResults = async (req, res) => {
     });
   }
 };
+const deleteCompareResult = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "id zorunludur",
+      });
+    }
+
+    await db.collection("compareResults").doc(id).delete();
+
+    res.json({
+      success: true,
+      message: "Karşılaştırma kaydı silindi",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 module.exports = {
   compareCars,
   saveCompareResult,
   getUserCompareResults,
+  deleteCompareResult,
 };
