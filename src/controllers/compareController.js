@@ -138,11 +138,11 @@ Kazanan araç: ${winner}
       },
     });
   } catch (error) {
-    console.error("COMPARE ERROR:", error);
+    console.error("COMPARE CARS ERROR:", error);
 
     res.status(500).json({
       success: false,
-      message: "Karşılaştırma işlemi başarısız",
+      message: "Karşılaştırma işlemi başarısız oldu",
     });
   }
 };
@@ -195,11 +195,11 @@ const saveCompareResult = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("SAVE COMPARE ERROR:", error);
+    console.error("SAVE COMPARE RESULT ERROR:", error);
 
     res.status(500).json({
       success: false,
-      message: "Karşılaştırma kaydedilemedi",
+      message: "Karşılaştırma sonucu kaydedilemedi",
     });
   }
 };
@@ -285,7 +285,7 @@ const deleteCompareResult = async (req, res) => {
       message: "Karşılaştırma kaydı silindi",
     });
   } catch (error) {
-    console.error("DELETE COMPARE ERROR:", error);
+    console.error("DELETE COMPARE RESULT ERROR:", error);
 
     res.status(500).json({
       success: false,

@@ -8,7 +8,7 @@ const addFavorite = async (req, res) => {
     if (!carId) {
       return res.status(400).json({
         success: false,
-        message: "carId alanı zorunludur"
+        message: "carId alanı zorunludur",
       });
     }
 
@@ -21,24 +21,26 @@ const addFavorite = async (req, res) => {
     if (!existingFavorite.empty) {
       return res.status(400).json({
         success: false,
-        message: "Araç zaten favorilerde"
+        message: "Araç zaten favorilerde",
       });
     }
 
     await db.collection("favorites").add({
       userId,
       carId,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     res.json({
       success: true,
-      message: "Favorilere eklendi"
+      message: "Favorilere eklendi",
     });
   } catch (error) {
+    console.error("ADD FAVORITE ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Favori ekleme işlemi başarısız oldu",
     });
   }
 };
@@ -57,15 +59,18 @@ const getFavorites = async (req, res) => {
     for (const doc of snapshot.docs) {
       const favorite = doc.data();
 
-      const carDoc = await db.collection("cars").doc(favorite.carId).get();
+      const carDoc = await db
+        .collection("cars")
+        .doc(favorite.carId)
+        .get();
 
       if (carDoc.exists) {
         favorites.push({
           favoriteId: doc.id,
           car: {
             id: carDoc.id,
-            ...carDoc.data()
-          }
+            ...carDoc.data(),
+          },
         });
       }
     }
@@ -73,12 +78,14 @@ const getFavorites = async (req, res) => {
     res.json({
       success: true,
       total: favorites.length,
-      data: favorites
+      data: favorites,
     });
   } catch (error) {
+    console.error("GET FAVORITES ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Favoriler alınamadı",
     });
   }
 };
@@ -88,12 +95,22 @@ const removeFavorite = async (req, res) => {
     const { favoriteId } = req.params;
     const userId = req.user.uid;
 
-    const favoriteDoc = await db.collection("favorites").doc(favoriteId).get();
+    if (!favoriteId) {
+      return res.status(400).json({
+        success: false,
+        message: "favoriteId zorunludur",
+      });
+    }
+
+    const favoriteDoc = await db
+      .collection("favorites")
+      .doc(favoriteId)
+      .get();
 
     if (!favoriteDoc.exists) {
       return res.status(404).json({
         success: false,
-        message: "Favori bulunamadı"
+        message: "Favori bulunamadı",
       });
     }
 
@@ -102,7 +119,7 @@ const removeFavorite = async (req, res) => {
     if (favoriteData.userId !== userId) {
       return res.status(403).json({
         success: false,
-        message: "Bu favoriyi silme yetkin yok"
+        message: "Bu favoriyi silme yetkin yok",
       });
     }
 
@@ -110,12 +127,14 @@ const removeFavorite = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Favorilerden çıkarıldı"
+      message: "Favorilerden çıkarıldı",
     });
   } catch (error) {
+    console.error("REMOVE FAVORITE ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Favori silme işlemi başarısız oldu",
     });
   }
 };
@@ -123,5 +142,5 @@ const removeFavorite = async (req, res) => {
 module.exports = {
   addFavorite,
   getFavorites,
-  removeFavorite
+  removeFavorite,
 };

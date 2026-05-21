@@ -1,9 +1,19 @@
 const errorMiddleware = (err, req, res, next) => {
-  console.error(err);
+  console.error("GLOBAL ERROR:", err);
 
-  res.status(err.status || 500).json({
+  const statusCode = err.status || 500;
+
+  if (process.env.NODE_ENV === "development") {
+    return res.status(statusCode).json({
+      success: false,
+      message: err.message || "Sunucu hatası",
+      stack: err.stack,
+    });
+  }
+
+  res.status(statusCode).json({
     success: false,
-    message: err.message || "Sunucu hatası"
+    message: "Sunucu hatası oluştu",
   });
 };
 

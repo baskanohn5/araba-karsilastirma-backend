@@ -9,19 +9,21 @@ const getAllCars = async (req, res) => {
     carsSnapshot.forEach((doc) => {
       cars.push({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       });
     });
 
     res.json({
       success: true,
       total: cars.length,
-      data: cars
+      data: cars,
     });
   } catch (error) {
+    console.error("GET ALL CARS ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Araçlar alınamadı",
     });
   }
 };
@@ -35,7 +37,7 @@ const getCarById = async (req, res) => {
     if (!carDoc.exists) {
       return res.status(404).json({
         success: false,
-        message: "Araba bulunamadı"
+        message: "Araba bulunamadı",
       });
     }
 
@@ -43,13 +45,15 @@ const getCarById = async (req, res) => {
       success: true,
       data: {
         id: carDoc.id,
-        ...carDoc.data()
-      }
+        ...carDoc.data(),
+      },
     });
   } catch (error) {
+    console.error("GET CAR BY ID ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Araç detayı alınamadı",
     });
   }
 };
@@ -60,7 +64,7 @@ const createCar = async (req, res) => {
 
     const newCarRef = await db.collection("cars").add({
       ...carData,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     res.status(201).json({
@@ -68,13 +72,15 @@ const createCar = async (req, res) => {
       message: "Araba başarıyla eklendi",
       data: {
         id: newCarRef.id,
-        ...carData
-      }
+        ...carData,
+      },
     });
   } catch (error) {
+    console.error("CREATE CAR ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Araba eklenemedi",
     });
   }
 };
@@ -92,7 +98,7 @@ const searchCars = async (req, res) => {
       maxPrice,
       minYear,
       maxYear,
-      maxFuel
+      maxFuel,
     } = req.query;
 
     let query = db.collection("cars");
@@ -128,7 +134,7 @@ const searchCars = async (req, res) => {
     snapshot.forEach((doc) => {
       const car = {
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       };
 
       let isValid = true;
@@ -161,12 +167,14 @@ const searchCars = async (req, res) => {
     res.json({
       success: true,
       total: cars.length,
-      data: cars
+      data: cars,
     });
   } catch (error) {
+    console.error("SEARCH CARS ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Araç arama işlemi başarısız",
     });
   }
 };
@@ -181,26 +189,28 @@ const updateCar = async (req, res) => {
     if (!carDoc.exists) {
       return res.status(404).json({
         success: false,
-        message: "Araba bulunamadı"
+        message: "Araba bulunamadı",
       });
     }
 
     await db.collection("cars").doc(id).set(
       {
         ...updateData,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       { merge: true }
     );
 
     res.json({
       success: true,
-      message: "Araba başarıyla güncellendi"
+      message: "Araba başarıyla güncellendi",
     });
   } catch (error) {
+    console.error("UPDATE CAR ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Araba güncellenemedi",
     });
   }
 };
@@ -214,7 +224,7 @@ const deleteCar = async (req, res) => {
     if (!carDoc.exists) {
       return res.status(404).json({
         success: false,
-        message: "Araba bulunamadı"
+        message: "Araba bulunamadı",
       });
     }
 
@@ -222,12 +232,14 @@ const deleteCar = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Araba başarıyla silindi"
+      message: "Araba başarıyla silindi",
     });
   } catch (error) {
+    console.error("DELETE CAR ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message
+      message: "Araba silinemedi",
     });
   }
 };
@@ -238,5 +250,5 @@ module.exports = {
   createCar,
   searchCars,
   updateCar,
-  deleteCar
+  deleteCar,
 };
