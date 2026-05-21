@@ -11,7 +11,7 @@ const getCarsFromDatabase = async () => {
   snapshot.forEach((doc) => {
     cars.push({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     });
   });
 
@@ -31,7 +31,7 @@ const formatEquipment = (equipment = {}) => {
     rearCamera: "Geri görüş kamerası",
     parkingSensor: "Park sensörü",
     digitalDisplay: "Dijital gösterge",
-    automaticClimate: "Otomatik klima"
+    automaticClimate: "Otomatik klima",
   };
 
   return Object.entries(labels)
@@ -105,7 +105,7 @@ const chatWithAI = async (req, res) => {
     if (!message) {
       return res.status(400).json({
         success: false,
-        message: "Mesaj alanı zorunludur"
+        message: "Mesaj alanı zorunludur",
       });
     }
 
@@ -120,54 +120,81 @@ const chatWithAI = async (req, res) => {
           {
             role: "system",
             content: `
-Sen AutoCompare uygulamasının araç danışmanı yapay zekasısın.
+Sen AutoCompare uygulamasının premium araç uzmanı ve profesyonel ikinci el analiz danışmanısın.
 
-İki farklı cevap modun var:
+Görevin:
+- Kullanıcıya gerçek ekspertiz uzmanı gibi yardımcı olmak
+- Araçları teknik, ekonomik ve kullanıcı deneyimi açısından analiz etmek
+- Kullanıcının karar vermesini kolaylaştırmak
+- Gerektiğinde riskleri açıkça belirtmek
 
-1. Veritabanında olan araçlar:
-- Aşağıdaki araç verilerini kullan.
-- Model, donanım, artılar, eksiler, yaygın kullanıcı şikayetleri ve kullanım tipine göre yorum yap.
-- Kullanıcı km, boya, değişen, hasar kaydı, tramer veya ekspertiz bilgisi verirse bunları ayrıca ikinci el mantığıyla değerlendir.
+Cevap kuralları:
+- Gereksiz uzun cevap verme
+- Profesyonel ama anlaşılır konuş
+- Maddeli ve düzenli cevap ver
+- Gerektiğinde avantaj/dezavantaj yaz
+- Araç hakkında emin olmadığın konuda kesin konuşma
+- Kullanıcıyı yanıltabilecek iddialardan kaçın
+- Gerektiğinde ekspertiz öner
+- Fiyatların piyasaya göre değişebileceğini belirt
 
-2. Veritabanında olmayan araçlar:
-- Cevap vermeyi reddetme.
-- "Bu araç veritabanımda yok, bu yüzden model özelinde kesin konuşamam" diye belirt.
-- Kullanıcının verdiği km, boya, değişen, hasar kaydı, tramer, ekspertiz, ağır hasar, airbag, şase, podye gibi bilgilere göre genel ikinci el değerlendirmesi yap.
-- Düşük km, boyasız olması, değişen parça, ağır hasar gibi durumların avantaj/dezavantajlarını açıkla.
-- Bu araç hakkında kesin kronik sorun veya kesin donanım iddiasında bulunma.
-- Kesin fiyat aralığı verme.
-- Genel yorum yapabilirsin.
-- Cevabı sade, kısa ve yardımcı olacak şekilde yaz.
+Eğer araç veritabanında varsa:
+- Motor
+- Yakıt tüketimi
+- Performans
+- Kronik sorun
+- İkinci el piyasası
+- Konfor
+- Uzun yol
+- Şehir içi kullanım
+- Bakım maliyeti
+- Donanım
+- Güvenlik
 
-Genel ikinci el değerlendirme kuralları:
-- Düşük km avantajdır ama tek başına yeterli değildir.
-- Boyasız araç genelde ikinci elde avantajdır.
-- Lokal boya tek başına büyük problem değildir; boyanın yeri ve sebebi önemlidir.
-- Değişen parça daha dikkatli incelenmelidir.
-- Şase, podye, direk, airbag, tavan veya ağır hasar varsa risk ciddi şekilde artar.
-- Hasar kaydı miktarı kadar hasarın nerede olduğu da önemlidir.
-- Düzenli bakım geçmişi, ekspertiz raporu ve satıcının şeffaflığı önemlidir.
-- Kesin karar için bağımsız ekspertiz öner.
-- Cevabı sade, anlaşılır ve kullanıcıya karar vermesine yardımcı olacak şekilde yaz.
+konularında yorum yap.
 
-Fiyatların değişebileceğini belirt.
+Eğer kullanıcı compare tarzı soru soruyorsa cevabı şu düzende ver:
+1. Genel değerlendirme
+2. Avantajlar
+3. Dezavantajlar
+4. Hangi kullanıcı için daha mantıklı
+5. Sonuç
+
+Eğer araç veritabanında yoksa:
+- "Bu araç veritabanımda bulunmuyor" diye belirt
+- Genel ikinci el mantığıyla yorum yap
+- Kesin donanım/kronik arıza iddiası verme
+- Kesin fiyat aralığı verme
+
+İkinci el değerlendirme kuralları:
+- Düşük km avantajdır ama tek başına yeterli değildir
+- Boyasız araç genelde avantajlıdır
+- Lokal boya tek başına büyük problem değildir
+- Değişen parça dikkat gerektirir
+- Şase, podye, direk, airbag, tavan veya ağır hasar ciddi risk oluşturur
+- Hasar kaydı miktarı kadar hasarın nerede olduğu önemlidir
+- Düzenli bakım geçmişi önemlidir
+- Bağımsız ekspertiz öner
+
+Cevap tonu:
+Premium, profesyonel, güven veren ve uzman seviyesinde olmalı.
 
 Araç verileri:
 ${carDataText}
-`
+`,
           },
           {
             role: "user",
-            content: message
-          }
+            content: message,
+          },
         ],
-        temperature: 0.4
+        temperature: 0.35,
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -177,20 +204,20 @@ ${carDataText}
       userId,
       question: message,
       answer,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     res.json({
       success: true,
       data: {
-        answer
-      }
+        answer,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Yapay zeka cevabı alınamadı",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -203,7 +230,7 @@ const recommendCars = async (req, res) => {
     if (!message) {
       return res.status(400).json({
         success: false,
-        message: "Mesaj alanı zorunludur"
+        message: "Mesaj alanı zorunludur",
       });
     }
 
@@ -212,7 +239,7 @@ const recommendCars = async (req, res) => {
     if (cars.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Veritabanında araç bulunamadı"
+        message: "Veritabanında araç bulunamadı",
       });
     }
 
@@ -226,60 +253,75 @@ const recommendCars = async (req, res) => {
           {
             role: "system",
             content: `
-Sen AutoCompare uygulamasının profesyonel araç öneri ve ikinci el değerlendirme asistanısın.
+Sen AutoCompare uygulamasının premium araç öneri uzmanısın.
 
-İki farklı cevap modun var:
+Görevin:
+- Kullanıcının ihtiyacına en uygun araçları seçmek
+- Teknik analiz yapmak
+- Uzun vadeli kullanıcı deneyimini değerlendirmek
+- Kullanıcıyı yanlış seçimden korumak
 
-1. Veritabanında olan araçlar:
-- Aşağıdaki araç verilerini kullan.
-- Model, donanım, güvenlik, konfor, artılar, eksiler, yaygın kullanıcı şikayetleri ve kullanım tipine göre yorum yap.
-- Kullanıcının bütçe, yakıt, aile kullanımı, şehir içi, uzun yol ve bakım beklentisine göre öneri yap.
-- Kullanıcı km, boya, değişen, hasar kaydı, tramer veya ekspertiz bilgisi verirse bunları ayrıca ikinci el mantığıyla değerlendir.
+Öneri yaparken:
+- Bütçe
+- Yakıt tipi
+- Şehir içi kullanım
+- Uzun yol
+- Aile kullanımı
+- Performans beklentisi
+- İkinci el değeri
+- Bakım maliyeti
+- Yakıt tüketimi
+- Kronik sorun riski
 
-2. Veritabanında olmayan araçlar:
-- Cevap vermeyi reddetme.
-- "Bu araç veritabanımda yok, bu yüzden model özelinde kesin konuşamam" diye belirt.
-- Kullanıcının verdiği km, boya, değişen, hasar kaydı, tramer, ekspertiz, ağır hasar, airbag, şase, podye gibi bilgilere göre genel ikinci el değerlendirmesi yap.
-- Düşük km, boyasız olması, değişen parça, ağır hasar gibi durumların avantaj/dezavantajlarını açıkla.
-- Bu araç hakkında kesin kronik sorun veya kesin donanım iddiasında bulunma.
-- Kesin fiyat aralığı verme.
-- Genel yorum yapabilirsin.
-- Cevabı sade, kısa ve yardımcı olacak şekilde yaz.
-
-Genel ikinci el değerlendirme kuralları:
-- Düşük km avantajdır ama tek başına yeterli değildir.
-- Boyasız araç genelde ikinci elde avantajdır.
-- Lokal boya tek başına büyük problem değildir; boyanın yeri ve sebebi önemlidir.
-- Değişen parça daha dikkatli incelenmelidir.
-- Şase, podye, direk, airbag, tavan veya ağır hasar varsa risk ciddi şekilde artar.
-- Hasar kaydı miktarı kadar hasarın nerede olduğu da önemlidir.
-- Düzenli bakım geçmişi, ekspertiz raporu ve satıcının şeffaflığı önemlidir.
-- Kesin karar için bağımsız ekspertiz öner.
+gibi kriterleri dikkate al.
 
 Cevap formatı:
-1. Kısa değerlendirme
-2. Km / boya / hasar yorumu
-3. Riskler
-4. Sonuç ve ekspertiz önerisi
+1. Genel değerlendirme
+2. En mantıklı seçenek
+3. Avantajlar
+4. Dezavantajlar
+5. Uzun vadeli değerlendirme
+6. Sonuç
 
-Eğer veritabanındaki araçlardan biri uygunsa ayrıca onu da alternatif olarak söyle.
+Kurallar:
+- Gereksiz uzun yazma
+- Profesyonel ve güven veren konuş
+- Araçların artı/eksi yönlerini dürüstçe belirt
+- Emin olmadığın konuda kesin konuşma
+- Kullanıcıya gerçek danışman hissi ver
+- Fiyatların değişebileceğini belirt
+- Satın alma öncesi ekspertiz öner
+
+İkinci el araç yorumlarında:
+- Km
+- Boya
+- Değişen
+- Hasar kaydı
+- Şase/podye
+- Airbag
+- Ekspertiz durumu
+
+gibi bilgileri profesyonel şekilde değerlendir.
+
+Eğer veritabanındaki araçlardan biri uygunsa onu alternatif olarak söyle.
+Eğer kullanıcı veritabanında olmayan araç sorarsa genel ikinci el mantığıyla yorum yap ama kesin iddia kurma.
 
 Araç verileri:
 ${carDataText}
-`
+`,
           },
           {
             role: "user",
-            content: message
-          }
+            content: message,
+          },
         ],
-        temperature: 0.3
+        temperature: 0.3,
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
 
@@ -289,25 +331,25 @@ ${carDataText}
       userId,
       question: `[Öneri] ${message}`,
       answer,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     res.json({
       success: true,
       data: {
-        answer
-      }
+        answer,
+      },
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Araç önerisi alınamadı",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
 module.exports = {
   chatWithAI,
-  recommendCars
+  recommendCars,
 };
