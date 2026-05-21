@@ -35,6 +35,7 @@ const allowedOrigins = [
   "http://127.0.0.1:15453",
   "http://127.0.0.1:32586",
 ];
+const adminRoutes = require("./routes/adminRoutes");
 
 app.use(
   cors({
@@ -106,5 +107,6 @@ app.use("/api/chat-history", chatHistoryRoutes);
 app.use("/api/chat", aiLimiter, chatRoutes);
 
 app.use(errorMiddleware);
+app.use("/api/admin", adminRoutes);
 
 module.exports = app;
