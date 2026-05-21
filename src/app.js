@@ -16,26 +16,13 @@ const aiRoutes = require("./routes/aiRoutes");
 const favoriteRoutes = require("./routes/favoriteRoutes");
 const chatHistoryRoutes = require("./routes/chatHistoryRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
 const app = express();
 
 app.set("trust proxy", 1);
-
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5000",
-  "http://localhost:5001",
-  "http://localhost:15453",
-  "http://localhost:32586",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5000",
-  "http://127.0.0.1:5001",
-  "http://127.0.0.1:15453",
-  "http://127.0.0.1:32586",
-];
-const adminRoutes = require("./routes/adminRoutes");
 
 app.use(
   cors({
@@ -49,10 +36,6 @@ app.use(
       }
 
       if (origin.startsWith("http://127.0.0.1")) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
@@ -105,8 +88,8 @@ app.use("/api/ai", aiLimiter, aiRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/chat-history", chatHistoryRoutes);
 app.use("/api/chat", aiLimiter, chatRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(errorMiddleware);
-app.use("/api/admin", adminRoutes);
 
 module.exports = app;

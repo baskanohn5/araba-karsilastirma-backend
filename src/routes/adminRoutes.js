@@ -13,11 +13,7 @@ router.get(
     return res.json({
       success: true,
       message: "Admin erişimi başarılı",
-      user: {
-        uid: req.user.uid,
-        admin: req.user.admin,
-        role: req.user.role,
-      },
+      user: req.user,
     });
   }
 );
