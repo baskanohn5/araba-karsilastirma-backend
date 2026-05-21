@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
+const authMiddleware = require("../middlewares/authMiddleware");
+
 const {
   compareCars,
   saveCompareResult,
@@ -10,10 +12,10 @@ const {
 
 router.post("/", compareCars);
 
-router.post("/save", saveCompareResult);
+router.post("/save", authMiddleware, saveCompareResult);
 
-router.get("/user/:userId", getUserCompareResults);
+router.get("/user", authMiddleware, getUserCompareResults);
 
-router.delete("/saved/:id", deleteCompareResult);
+router.delete("/saved/:id", authMiddleware, deleteCompareResult);
 
 module.exports = router;

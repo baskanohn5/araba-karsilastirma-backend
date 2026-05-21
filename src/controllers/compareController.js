@@ -138,17 +138,20 @@ Kazanan araç: ${winner}
       },
     });
   } catch (error) {
+    console.error("COMPARE ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Karşılaştırma işlemi başarısız",
     });
   }
 };
 
 const saveCompareResult = async (req, res) => {
   try {
+    const userId = req.user.uid;
+
     const {
-      userId,
       car1Id,
       car2Id,
       car1Name,
@@ -159,10 +162,10 @@ const saveCompareResult = async (req, res) => {
       comment,
     } = req.body;
 
-    if (!userId || !car1Id || !car2Id) {
+    if (!car1Id || !car2Id) {
       return res.status(400).json({
         success: false,
-        message: "userId, car1Id ve car2Id zorunludur",
+        message: "car1Id ve car2Id zorunludur",
       });
     }
 
@@ -192,23 +195,18 @@ const saveCompareResult = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("SAVE COMPARE ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Karşılaştırma kaydedilemedi",
     });
   }
 };
 
 const getUserCompareResults = async (req, res) => {
   try {
-    const { userId } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "userId zorunludur",
-      });
-    }
+    const userId = req.user.uid;
 
     const snapshot = await db
       .collection("compareResults")
@@ -237,22 +235,46 @@ const getUserCompareResults = async (req, res) => {
       data: results,
     });
   } catch (error) {
-    console.error("GET USER COMPARE RESULTS ERROR:", error);
+    console.error("GET USER COMPARES ERROR:", error);
 
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Karşılaştırmalar alınamadı",
     });
   }
 };
+
 const deleteCompareResult = async (req, res) => {
   try {
+    const userId = req.user.uid;
+
     const { id } = req.params;
 
     if (!id) {
       return res.status(400).json({
         success: false,
         message: "id zorunludur",
+      });
+    }
+
+    const compareDoc = await db
+      .collection("compareResults")
+      .doc(id)
+      .get();
+
+    if (!compareDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: "Karşılaştırma bulunamadı",
+      });
+    }
+
+    const compareData = compareDoc.data();
+
+    if (compareData.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Bu işlem için yetkiniz yok",
       });
     }
 
@@ -263,9 +285,11 @@ const deleteCompareResult = async (req, res) => {
       message: "Karşılaştırma kaydı silindi",
     });
   } catch (error) {
+    console.error("DELETE COMPARE ERROR:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Karşılaştırma silinemedi",
     });
   }
 };
