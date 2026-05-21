@@ -7,14 +7,14 @@ const authMiddleware = async (req, res, next) => {
     if (!authHeader) {
       return res.status(401).json({
         success: false,
-        message: "Token bulunamadı",
+        message: "Oturum bilgisi bulunamadı",
       });
     }
 
     if (!authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Geçersiz token formatı",
+        message: "Geçersiz oturum formatı",
       });
     }
 
@@ -23,23 +23,28 @@ const authMiddleware = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Token boş",
+        message: "Oturum tokenı boş",
       });
     }
 
-    const decodedToken =
-      await admin.auth().verifyIdToken(token);
+    const decodedToken = await admin.auth().verifyIdToken(token);
 
-    req.user = decodedToken;
+    req.user = {
+      uid: decodedToken.uid,
+      email: decodedToken.email || null,
+      phoneNumber: decodedToken.phone_number || null,
+    };
 
-    next();
+    return next();
   } catch (error) {
-    console.error("AUTH ERROR:", error);
+    console.error("AUTH MIDDLEWARE ERROR:", {
+      code: error.code,
+      message: error.message,
+    });
 
     return res.status(401).json({
       success: false,
-      message: "Geçersiz token",
-      error: error.message,
+      message: "Oturum süresi dolmuş veya geçersiz",
     });
   }
 };

@@ -1,10 +1,25 @@
 const axios = require("axios");
 const db = require("../config/firebase");
 
-const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
+const DEEPSEEK_API_URL =
+  "https://api.deepseek.com/chat/completions";
+
+const MAX_CARS_FOR_AI = 25;
+
+const sanitizeUserMessage = (message = "") => {
+  return message
+    .replace(/ignore previous instructions/gi, "")
+    .replace(/system prompt/gi, "")
+    .replace(/developer message/gi, "")
+    .trim()
+    .slice(0, 1500);
+};
 
 const getCarsFromDatabase = async () => {
-  const snapshot = await db.collection("cars").get();
+  const snapshot = await db
+    .collection("cars")
+    .limit(MAX_CARS_FOR_AI)
+    .get();
 
   const cars = [];
 
@@ -25,28 +40,40 @@ const formatEquipment = (equipment = {}) => {
     androidAuto: "Android Auto",
     sunroof: "Sunroof",
     leatherSeat: "Deri Koltuk",
-    adaptiveCruiseControl: "Adaptif hız sabitleyici",
+    adaptiveCruiseControl:
+      "Adaptif hız sabitleyici",
     laneAssist: "Şerit takip",
-    blindSpotWarning: "Kör nokta uyarı",
+    blindSpotWarning:
+      "Kör nokta uyarı",
     rearCamera: "Geri görüş kamerası",
     parkingSensor: "Park sensörü",
-    digitalDisplay: "Dijital gösterge",
-    automaticClimate: "Otomatik klima",
+    digitalDisplay:
+      "Dijital gösterge",
+    automaticClimate:
+      "Otomatik klima",
   };
 
   return Object.entries(labels)
     .map(([key, label]) => {
-      return `${label}: ${equipment[key] ? "Var" : "Yok"}`;
+      return `${label}: ${
+        equipment[key] ? "Var" : "Yok"
+      }`;
     })
     .join("\n");
 };
 
 const formatList = (items = []) => {
-  if (!Array.isArray(items) || items.length === 0) {
+  if (
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
     return "Bilgi yok";
   }
 
-  return items.map((item) => `- ${item}`).join("\n");
+  return items
+    .slice(0, 5)
+    .map((item) => `- ${item}`)
+    .join("\n");
 };
 
 const createCarDataText = (cars) => {
@@ -64,19 +91,15 @@ Kasa: ${car.bodyType}
 Fiyat: ${car.minPrice} - ${car.maxPrice} TL
 Yakıt Tüketimi: ${car.averageFuel} L/100 km
 Tutulma: ${car.marketPopularity}/10
-Parça Bulunabilirliği: ${car.sparePartAvailability}/10
-Bakım Maliyeti: ${car.maintenanceCost}/10
-İkinci El Değeri: ${car.secondHandValue}/10
-Kronik Sorun Puanı: ${car.chronicProblemScore}/10
-Segment: ${car.segment || "Bilinmiyor"}
+Parça: ${car.sparePartAvailability}/10
+Bakım: ${car.maintenanceCost}/10
+2. El: ${car.secondHandValue}/10
+Kronik Sorun: ${car.chronicProblemScore}/10
 Konfor: ${car.comfortScore || 0}/10
 Performans: ${car.performanceScore || 0}/10
 Güvenlik: ${car.safetyScore || 0}/10
-Aile Kullanımı: ${car.familyFriendly ? "Uygun" : "Uygun değil"}
-Şehir İçi: ${car.cityUseScore || 0}/10
-Uzun Yol: ${car.longRoadScore || 0}/10
-Beygir: ${car.horsePower || 0} HP
-Bagaj: ${car.trunkVolume || 0} L
+HP: ${car.horsePower || 0}
+Bagaj: ${car.trunkVolume || 0}L
 
 Donanım:
 ${formatEquipment(car.equipment)}
@@ -86,119 +109,118 @@ ${formatList(car.pros)}
 
 Eksiler:
 ${formatList(car.cons)}
-
-Yaygın Kullanıcı Şikayetleri:
-${formatList(car.commonComplaints)}
-
-Önerilen Kullanım Tipi:
-${formatList(car.recommendedUsage)}
 `;
     })
-    .join("\n----------------------\n");
+    .join("\n------------------\n");
+};
+
+const askDeepSeek = async (
+  systemPrompt,
+  userMessage
+) => {
+  const response = await axios.post(
+    DEEPSEEK_API_URL,
+    {
+      model: "deepseek-chat",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ],
+      temperature: 0.35,
+      max_tokens: 1200,
+    },
+    {
+      timeout: 25000,
+      headers: {
+        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        "Content-Type":
+          "application/json",
+      },
+    }
+  );
+
+  return response.data.choices[0].message.content;
 };
 
 const chatWithAI = async (req, res) => {
   try {
-    const { message } = req.body;
     const userId = req.user.uid;
 
-    if (!message) {
+    const rawMessage = req.body.message;
+
+    if (!rawMessage) {
       return res.status(400).json({
         success: false,
-        message: "Mesaj alanı zorunludur",
+        message:
+          "Mesaj alanı zorunludur",
       });
     }
 
-    const cars = await getCarsFromDatabase();
-    const carDataText = createCarDataText(cars);
+    const message =
+      sanitizeUserMessage(rawMessage);
 
-    const aiResponse = await axios.post(
-      DEEPSEEK_API_URL,
-      {
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: `
-Sen AutoCompare uygulamasının premium araç uzmanı ve profesyonel ikinci el analiz danışmanısın.
+    const cars =
+      await getCarsFromDatabase();
 
-Görevin:
-- Kullanıcıya gerçek ekspertiz uzmanı gibi yardımcı olmak
-- Araçları teknik, ekonomik ve kullanıcı deneyimi açısından analiz etmek
-- Kullanıcının karar vermesini kolaylaştırmak
-- Gerektiğinde riskleri açıkça belirtmek
+    const carDataText =
+      createCarDataText(cars);
 
-Cevap kuralları:
+    const systemPrompt = `
+Sen AutoCompare uygulamasının premium araç uzmanı, ikinci el danışmanı ve profesyonel ekspertiz yorumcususun.
+
+Görevlerin:
+- Kullanıcıya araç seçimi konusunda yardımcı olmak
+- Teknik analiz yapmak
+- Avantaj/dezavantaj belirtmek
+- Kullanıcıyı riskli araçlardan korumak
+- Premium danışman hissi vermek
+
+Kurallar:
 - Gereksiz uzun cevap verme
-- Profesyonel ama anlaşılır konuş
-- Maddeli ve düzenli cevap ver
-- Gerektiğinde avantaj/dezavantaj yaz
-- Araç hakkında emin olmadığın konuda kesin konuşma
-- Kullanıcıyı yanıltabilecek iddialardan kaçın
+- Maddeli yaz
+- Profesyonel konuş
+- Teknik ama anlaşılır ol
+- Emin olmadığın konuda kesin konuşma
 - Gerektiğinde ekspertiz öner
-- Fiyatların piyasaya göre değişebileceğini belirt
+- Kullanıcıyı yanıltma
+- Fiyatların değişebileceğini belirt
 
-Eğer araç veritabanında varsa:
+Araç varsa:
 - Motor
-- Yakıt tüketimi
+- Yakıt
 - Performans
+- Konfor
+- Güvenlik
 - Kronik sorun
 - İkinci el piyasası
-- Konfor
+- Donanım
 - Uzun yol
 - Şehir içi kullanım
-- Bakım maliyeti
-- Donanım
-- Güvenlik
 
 konularında yorum yap.
 
-Eğer kullanıcı compare tarzı soru soruyorsa cevabı şu düzende ver:
-1. Genel değerlendirme
-2. Avantajlar
-3. Dezavantajlar
-4. Hangi kullanıcı için daha mantıklı
-5. Sonuç
-
-Eğer araç veritabanında yoksa:
-- "Bu araç veritabanımda bulunmuyor" diye belirt
+Araç yoksa:
 - Genel ikinci el mantığıyla yorum yap
-- Kesin donanım/kronik arıza iddiası verme
-- Kesin fiyat aralığı verme
-
-İkinci el değerlendirme kuralları:
-- Düşük km avantajdır ama tek başına yeterli değildir
-- Boyasız araç genelde avantajlıdır
-- Lokal boya tek başına büyük problem değildir
-- Değişen parça dikkat gerektirir
-- Şase, podye, direk, airbag, tavan veya ağır hasar ciddi risk oluşturur
-- Hasar kaydı miktarı kadar hasarın nerede olduğu önemlidir
-- Düzenli bakım geçmişi önemlidir
-- Bağımsız ekspertiz öner
+- Kesin donanım veya arıza iddiası verme
 
 Cevap tonu:
-Premium, profesyonel, güven veren ve uzman seviyesinde olmalı.
+Premium, güven veren, uzman seviyesi.
 
 Araç verileri:
 ${carDataText}
-`,
-          },
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-        temperature: 0.35,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+`;
 
-    const answer = aiResponse.data.choices[0].message.content;
+    const answer =
+      await askDeepSeek(
+        systemPrompt,
+        message
+      );
 
     await db.collection("chatHistory").add({
       userId,
@@ -207,144 +229,127 @@ ${carDataText}
       createdAt: new Date(),
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         answer,
       },
     });
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "AI CHAT ERROR:",
+      error.response?.data ||
+        error.message
+    );
+
+    return res.status(500).json({
       success: false,
-      message: "Yapay zeka cevabı alınamadı",
-      error: error.message,
+      message:
+        "Yapay zeka cevabı alınamadı",
     });
   }
 };
 
-const recommendCars = async (req, res) => {
+const recommendCars = async (
+  req,
+  res
+) => {
   try {
-    const { message } = req.body;
     const userId = req.user.uid;
 
-    if (!message) {
+    const rawMessage = req.body.message;
+
+    if (!rawMessage) {
       return res.status(400).json({
         success: false,
-        message: "Mesaj alanı zorunludur",
+        message:
+          "Mesaj alanı zorunludur",
       });
     }
 
-    const cars = await getCarsFromDatabase();
+    const message =
+      sanitizeUserMessage(rawMessage);
+
+    const cars =
+      await getCarsFromDatabase();
 
     if (cars.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Veritabanında araç bulunamadı",
+        message:
+          "Veritabanında araç bulunamadı",
       });
     }
 
-    const carDataText = createCarDataText(cars);
+    const carDataText =
+      createCarDataText(cars);
 
-    const aiResponse = await axios.post(
-      DEEPSEEK_API_URL,
-      {
-        model: "deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content: `
+    const systemPrompt = `
 Sen AutoCompare uygulamasının premium araç öneri uzmanısın.
 
-Görevin:
-- Kullanıcının ihtiyacına en uygun araçları seçmek
+Görev:
+- Kullanıcıya en uygun araçları seçmek
+- Uzun vadeli mantıklı seçim önermek
 - Teknik analiz yapmak
-- Uzun vadeli kullanıcı deneyimini değerlendirmek
-- Kullanıcıyı yanlış seçimden korumak
+- Kullanıcıyı yanlış tercihten korumak
 
-Öneri yaparken:
-- Bütçe
-- Yakıt tipi
+Dikkate alınacaklar:
+- Yakıt tüketimi
+- Bakım maliyeti
+- Performans
+- Aile kullanımı
 - Şehir içi kullanım
 - Uzun yol
-- Aile kullanımı
-- Performans beklentisi
 - İkinci el değeri
-- Bakım maliyeti
-- Yakıt tüketimi
 - Kronik sorun riski
-
-gibi kriterleri dikkate al.
+- Güvenlik
+- Donanım
 
 Cevap formatı:
 1. Genel değerlendirme
-2. En mantıklı seçenek
+2. En mantıklı araç
 3. Avantajlar
 4. Dezavantajlar
-5. Uzun vadeli değerlendirme
+5. Uzun vadeli yorum
 6. Sonuç
 
-Kurallar:
-- Gereksiz uzun yazma
-- Profesyonel ve güven veren konuş
-- Araçların artı/eksi yönlerini dürüstçe belirt
-- Emin olmadığın konuda kesin konuşma
-- Kullanıcıya gerçek danışman hissi ver
-- Fiyatların değişebileceğini belirt
-- Satın alma öncesi ekspertiz öner
-
-İkinci el araç yorumlarında:
-- Km
-- Boya
-- Değişen
-- Hasar kaydı
-- Şase/podye
-- Airbag
-- Ekspertiz durumu
-
-gibi bilgileri profesyonel şekilde değerlendir.
-
-Eğer veritabanındaki araçlardan biri uygunsa onu alternatif olarak söyle.
-Eğer kullanıcı veritabanında olmayan araç sorarsa genel ikinci el mantığıyla yorum yap ama kesin iddia kurma.
+Cevap tonu:
+Premium, profesyonel, güven veren.
 
 Araç verileri:
 ${carDataText}
-`,
-          },
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-        temperature: 0.3,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+`;
 
-    const answer = aiResponse.data.choices[0].message.content;
+    const answer =
+      await askDeepSeek(
+        systemPrompt,
+        message
+      );
 
     await db.collection("chatHistory").add({
       userId,
-      question: `[Öneri] ${message}`,
+      question: `[ÖNERİ] ${message}`,
       answer,
       createdAt: new Date(),
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         answer,
       },
     });
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "AI RECOMMEND ERROR:",
+      error.response?.data ||
+        error.message
+    );
+
+    return res.status(500).json({
       success: false,
-      message: "Araç önerisi alınamadı",
-      error: error.message,
+      message:
+        "Araç önerisi alınamadı",
     });
   }
 };
