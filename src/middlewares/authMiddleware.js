@@ -29,11 +29,13 @@ const authMiddleware = async (req, res, next) => {
 
     const decodedToken = await admin.auth().verifyIdToken(token);
 
-    req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email || null,
-      phoneNumber: decodedToken.phone_number || null,
-    };
+  req.user = {
+    uid: decodedToken.uid,
+    email: decodedToken.email || null,
+    phoneNumber: decodedToken.phone_number || null,
+    admin: decodedToken.admin || false,
+    role: decodedToken.role || null,
+};
 
     return next();
   } catch (error) {
