@@ -6,7 +6,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const adminMiddleware = require("../middlewares/adminMiddleware");
 
 router.get("/test", authMiddleware, adminMiddleware, (req, res) => {
-  res.json({
+  return res.json({
     success: true,
     message: "Admin erişimi başarılı",
     user: req.user,

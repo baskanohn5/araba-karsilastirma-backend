@@ -17,7 +17,9 @@ const favoriteRoutes = require("./routes/favoriteRoutes");
 const chatHistoryRoutes = require("./routes/chatHistoryRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+app.use("/api/admin", adminRoutes);
 
+app.use(errorMiddleware);
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -87,8 +89,5 @@ app.use("/api/ai", aiLimiter, aiRoutes);
 app.use("/api/favorites", favoriteRoutes);
 app.use("/api/chat-history", chatHistoryRoutes);
 app.use("/api/chat", aiLimiter, chatRoutes);
-app.use("/api/admin", adminRoutes);
-
-app.use(errorMiddleware);
 
 module.exports = app;
