@@ -1,5 +1,4 @@
 const axios = require("axios");
-
 const db = require("../config/firebase");
 
 const normalizeText = (text = "") => {
@@ -15,352 +14,450 @@ const normalizeText = (text = "") => {
     .trim();
 };
 
-const findRelevantCars = (cars = [], message = "") => {
-  const normalizedMessage = normalizeText(message);
+const getAnswerProfile = (message = "") => {
+  const text = normalizeText(message);
 
-  const matchedCars = cars.filter((car) => {
-    const brand = normalizeText(car.brand);
-    const model = normalizeText(car.model);
-    const engine = normalizeText(car.engine);
-    const fuelType = normalizeText(car.fuelType);
-    const transmission = normalizeText(car.transmission);
+  const wantsDetailed =
+    text.includes("detayli") ||
+    text.includes("kapsamli") ||
+    text.includes("uzun") ||
+    text.includes("tum detay") ||
+    text.includes("tum detaylari") ||
+    text.includes("ekspertiz") ||
+    text.includes("rapor") ||
+    text.includes("analiz") ||
+    text.includes("profesyonel");
 
-    return (
-      normalizedMessage.includes(brand) ||
-      normalizedMessage.includes(model) ||
-      normalizedMessage.includes(`${brand} ${model}`) ||
-      normalizedMessage.includes(engine) ||
-      normalizedMessage.includes(fuelType) ||
-      normalizedMessage.includes(transmission)
-    );
-  });
+  const wantsCompare =
+    text.includes("karsilastir") ||
+    text.includes("kiyasla") ||
+    text.includes("hangisi") ||
+    text.includes("mi daha iyi") ||
+    text.includes("mi mantikli") ||
+    text.includes("mi alinır") ||
+    text.includes("mi alinir") ||
+    text.includes("corolla mi") ||
+    text.includes("civic mi") ||
+    text.includes("passat mi") ||
+    text.includes("megane mi") ||
+    text.includes("egea mi");
 
-  return matchedCars.slice(0, 10);
+  const wantsScore =
+    text.includes("skor") ||
+    text.includes("puan") ||
+    text.includes("alinir mi") ||
+    text.includes("alınır mı") ||
+    text.includes("mantikli mi") ||
+    text.includes("mantıklı mı");
+
+  const wantsRisk =
+    text.includes("risk") ||
+    text.includes("kronik") ||
+    text.includes("sanziman") ||
+    text.includes("şanzıman") ||
+    text.includes("motor riski") ||
+    text.includes("masraf") ||
+    text.includes("ariza") ||
+    text.includes("arıza");
+
+  if (wantsDetailed || wantsCompare || wantsRisk) {
+    return {
+      maxTokens: 7000,
+      timeout: 120000,
+      responseRule:
+        "Detaylı ve profesyonel cevap ver. Cevabı bölümlere ayır. Her bölümü tamamlanmış cümlelerle bitir. Maddeyi veya cümleyi yarım bırakma. Gerekiyorsa uzun cevap ver ama anlaşılır ve düzenli yaz.",
+    };
+  }
+
+  if (wantsScore) {
+    return {
+      maxTokens: 4000,
+      timeout: 90000,
+      responseRule:
+        "Orta uzunlukta profesyonel cevap ver. Skor, alınabilirlik, risk ve kısa sonuç ekle. Cümleleri yarım bırakma.",
+    };
+  }
+
+  return {
+    maxTokens: 2500,
+    timeout: 60000,
+    responseRule:
+      "Kısa ama profesyonel cevap ver. Gereksiz uzatma. Cevabı tamamlanmış cümlelerle bitir.",
+  };
 };
 
 const getCarsFromDatabase = async () => {
   const snapshot = await db.collection("cars").get();
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  const cars = [];
+
+  snapshot.forEach((doc) => {
+    cars.push({
+      id: doc.id,
+      ...doc.data(),
+    });
+  });
+
+  return cars;
 };
 
 const createCarDataText = (cars = []) => {
+  if (!cars.length) {
+    return "Veritabanında araç bulunamadı.";
+  }
+
   return cars
-    .map((car) => {
+    .map((car, index) => {
       return `
-Marka: ${car.brand || ""}
-Model: ${car.model || ""}
-Yıl: ${car.year || ""}
-Motor: ${car.engine || ""}
-Yakıt: ${car.fuelType || ""}
-Vites: ${car.transmission || ""}
-Kasa: ${car.bodyType || ""}
-Minimum Fiyat: ${car.minPrice || 0}
-Maximum Fiyat: ${car.maxPrice || 0}
-Yakıt Tüketimi: ${car.averageFuel || 0}
-Piyasa Popülerliği: ${car.marketPopularity || 0}
-Yedek Parça: ${car.sparePartAvailability || 0}
-Bakım Maliyeti: ${car.maintenanceCost || 0}
-2. El Değeri: ${car.secondHandValue || 0}
-Kronik Problem Skoru: ${car.chronicProblemScore || 0}
+${index + 1}. ${car.brand || ""} ${car.model || ""} ${car.year || ""} ${
+        car.engine || ""
+      } ${car.fuelType || ""} ${car.transmission || ""}
+
+Temel Bilgiler:
+- ID: ${car.id || car.slug || ""}
+- Marka: ${car.brand || "Bilinmiyor"}
+- Model: ${car.model || "Bilinmiyor"}
+- Yıl: ${car.year || "Bilinmiyor"}
+- Motor: ${car.engine || "Bilinmiyor"}
+- Yakıt: ${car.fuelType || "Bilinmiyor"}
+- Vites: ${car.transmission || "Bilinmiyor"}
+- Kasa: ${car.bodyType || "Bilinmiyor"}
+- Segment: ${car.segment || "Bilinmiyor"}
+
+Fiyat ve Tüketim:
+- Minimum fiyat: ${car.minPrice || "Bilinmiyor"}
+- Maksimum fiyat: ${car.maxPrice || "Bilinmiyor"}
+- Ortalama yakıt: ${car.averageFuel || "Bilinmiyor"}
+
+Puanlar:
+- Türkiye'de tutulma: ${car.marketPopularity || "Bilinmiyor"}/10
+- Parça bulunabilirliği: ${car.sparePartAvailability || "Bilinmiyor"}/10
+- Bakım maliyeti avantajı: ${car.maintenanceCost || "Bilinmiyor"}/10
+- İkinci el değeri: ${car.secondHandValue || "Bilinmiyor"}/10
+- Kronik sorun güven puanı: ${car.chronicProblemScore || "Bilinmiyor"}/10
+- Konfor: ${car.comfortScore || "Bilinmiyor"}/10
+- Performans: ${car.performanceScore || "Bilinmiyor"}/10
+- Güvenlik: ${car.safetyScore || "Bilinmiyor"}/10
+- Şehir içi kullanım: ${car.cityUseScore || "Bilinmiyor"}/10
+- Uzun yol: ${car.longRoadScore || "Bilinmiyor"}/10
+
+Teknik:
+- Beygir: ${car.horsePower || "Bilinmiyor"}
+- Bagaj: ${car.trunkVolume || "Bilinmiyor"}
+- Aileye uygun: ${car.familyFriendly === true ? "Evet" : "Hayır/Bilinmiyor"}
+
+Donanım:
+${
+  Array.isArray(car.equipment)
+    ? car.equipment.map((item) => `- ${item}`).join("\n")
+    : "Donanım bilgisi bulunmuyor."
+}
+
+Güvenlik:
+${
+  Array.isArray(car.safetyFeatures)
+    ? car.safetyFeatures.map((item) => `- ${item}`).join("\n")
+    : "Güvenlik bilgisi bulunmuyor."
+}
+
+Konfor:
+${
+  Array.isArray(car.comfortFeatures)
+    ? car.comfortFeatures.map((item) => `- ${item}`).join("\n")
+    : "Konfor bilgisi bulunmuyor."
+}
+
+Yaygın Kullanıcı Şikayetleri:
+${
+  Array.isArray(car.commonComplaints)
+    ? car.commonComplaints.map((item) => `- ${item}`).join("\n")
+    : "Kullanıcı şikayeti bilgisi bulunmuyor."
+}
+
+Artılar:
+${
+  Array.isArray(car.pros)
+    ? car.pros.map((item) => `- ${item}`).join("\n")
+    : "Artı bilgisi bulunmuyor."
+}
+
+Eksiler:
+${
+  Array.isArray(car.cons)
+    ? car.cons.map((item) => `- ${item}`).join("\n")
+    : "Eksi bilgisi bulunmuyor."
+}
+
+Kullanım Tipi:
+${
+  Array.isArray(car.usageTypes)
+    ? car.usageTypes.map((item) => `- ${item}`).join("\n")
+    : "Kullanım tipi bilgisi bulunmuyor."
+}
 `;
     })
-    .join("\n-----------------\n");
+    .join("\n-------------------------\n");
 };
 
-const getRecentChatHistory = async (userId) => {
-  if (!userId || userId === "anonymous") {
-    return [];
-  }
+const getDatabaseMatchInfo = (message = "", cars = []) => {
+  const text = normalizeText(message);
 
-  const snapshot = await db
-    .collection("chatHistory")
-    .where("userId", "==", userId)
-    .orderBy("createdAt", "desc")
-    .limit(5)
-    .get();
+  const matchedCars = cars.filter((car) => {
+    const brand = normalizeText(car.brand || "");
+    const model = normalizeText(car.model || "");
+    const engine = normalizeText(car.engine || "");
 
-  const history = [];
-
-  snapshot.docs.reverse().forEach((doc) => {
-    const data = doc.data();
-
-    if (data.message && data.answer) {
-      history.push({
-        role: "user",
-        content: data.message,
-      });
-
-      history.push({
-        role: "assistant",
-        content: data.answer,
-      });
-    }
+    return (
+      (brand && text.includes(brand)) ||
+      (model && text.includes(model)) ||
+      (engine && text.includes(engine))
+    );
   });
 
-  return history;
-};
-
-const saveChatHistory = async ({ userId, message, answer }) => {
-  await db.collection("chatHistory").add({
-    userId,
-    message,
-    question: message,
-    answer,
-    createdAt: new Date().toISOString(),
-  });
-};
-
-const isAnswerIncomplete = (answer = "") => {
-  const text = answer.trim();
-
-  if (!text) return true;
-
-  const validEndings = [".", "!", "?", ")", "]", "}", "```"];
-
-  if (validEndings.some((ending) => text.endsWith(ending))) {
-    return false;
+  if (matchedCars.length === 0) {
+    return {
+      hasMatch: false,
+      matchedCars: [],
+      matchText:
+        "Kullanıcının sorduğu araç veritabanında net olarak eşleşmedi.",
+    };
   }
 
-  const lowerText = text.toLowerCase();
-
-  if (
-    lowerText.endsWith("sonuç") ||
-    lowerText.endsWith("dezavantajları") ||
-    lowerText.endsWith("avantajları") ||
-    lowerText.endsWith("için") ||
-    lowerText.endsWith("ve") ||
-    lowerText.endsWith("ama") ||
-    lowerText.endsWith("fakat") ||
-    lowerText.endsWith("konfor") ||
-    lowerText.endsWith("bakım") ||
-    lowerText.endsWith("yakıt")
-  ) {
-    return true;
-  }
-
-  return true;
+  return {
+    hasMatch: true,
+    matchedCars,
+    matchText: `Kullanıcının sorusunda veritabanındaki şu araçlarla eşleşme bulundu: ${matchedCars
+      .map((car) => `${car.brand} ${car.model} ${car.year} ${car.engine}`)
+      .join(", ")}`,
+  };
 };
 
-const callAI = async ({
-  systemPrompt,
-  recentHistory = [],
-  message,
-  maxTokens = 5000,
-  timeout = 90000,
-}) => {
+const buildSystemPrompt = ({ message, cars, answerProfile }) => {
+  const carDataText = createCarDataText(cars);
+  const matchInfo = getDatabaseMatchInfo(message, cars);
+
+  return `
+Sen AutoCompare uygulamasının profesyonel araç danışmanı yapay zekasısın.
+
+Temel çalışma mantığın:
+1. Önce veritabanındaki araç bilgilerini kontrol et.
+2. Kullanıcının sorduğu araç veritabanında varsa:
+   - Veritabanındaki bilgileri öncelikli kullan.
+   - Donanım, güvenlik, konfor, kullanıcı şikayetleri, artılar, eksiler, kullanım tipi, yakıt, bakım, ikinci el ve risk bilgilerine göre yorum yap.
+3. Kullanıcının sorduğu araç veritabanında yoksa:
+   - Cevap vermeyi reddetme.
+   - "Bu araç veritabanımda yok, bu yüzden model özelinde kesin konuşamam" diye belirt.
+   - Genel ikinci el mantığına göre yorum yap.
+   - Kesin fiyat, kesin kronik sorun, kesin donanım veya kesin piyasa bilgisi iddiasında bulunma.
+   - Emin olmadığın yerde "öneri olarak", "genel olarak", "kontrol edilmesi gerekir" ifadelerini kullan.
+
+Veritabanı eşleşme durumu:
+${matchInfo.matchText}
+
+Cevap uzunluğu ve tarzı:
+${answerProfile.responseRule}
+
+Fiyat Kuralları:
+- Veritabanında olmayan araçlar için kesin fiyat aralığı verme.
+- Veritabanında olan araçlarda bile fiyatların güncel piyasaya göre değişebileceğini belirt.
+- Fiyatı kesin hüküm gibi yazma.
+
+İkinci El Değerlendirme Kuralları:
+- Düşük kilometre avantajdır ama tek başına yeterli değildir.
+- Boyasız araç genelde ikinci elde avantajdır.
+- Lokal boya tek başına büyük problem değildir; boyanın yeri ve sebebi önemlidir.
+- Değişen parça daha dikkatli incelenmelidir.
+- Şase, podye, direk, airbag, tavan veya ağır hasar varsa risk ciddi şekilde artar.
+- Hasar kaydı miktarı kadar hasarın nerede olduğu da önemlidir.
+- Düzenli bakım geçmişi, ekspertiz raporu ve satıcının şeffaflığı önemlidir.
+- Kesin karar için bağımsız ekspertiz öner.
+
+Karşılaştırma Kuralları:
+- Kullanıcı iki aracı karşılaştırırsa:
+  1. Genel Bakış
+  2. Motor / Performans
+  3. Yakıt
+  4. Bakım ve Parça
+  5. İkinci El
+  6. Konfor ve Güvenlik
+  7. Kronik Sorun / Risk
+  8. Kim Hangisini Almalı?
+  9. Sonuç
+  formatını kullanabilirsin.
+- Kazananı tek cümleyle belirt ama kullanım amacına göre değişebileceğini söyle.
+
+Risk Analizi Kuralları:
+- Kullanıcı bir araç hakkında risk analizi istiyorsa:
+  - Motor dayanıklılığını değerlendir.
+  - Şanzıman riskini değerlendir.
+  - Kronik arıza ihtimalini değerlendir.
+  - Uzun vadeli bakım maliyetini değerlendir.
+  - Parça bulunabilirliğini değerlendir.
+  - İkinci el piyasasını değerlendir.
+  - Kullanıcıya dikkat edilmesi gereken noktaları yaz.
+  - Alınabilirlik durumunu belirt.
+- Sonunda şu formatta risk puanı ver:
+  Risk Seviyesi: X/10
+- Risk puanı:
+  1-3 düşük risk
+  4-6 orta risk
+  7-10 yüksek risk
+- Eğer araç güvenilir görünüyorsa:
+  "Genel olarak güven veren bir araçtır" diyebilirsin.
+- Eğer riskli görünüyorsa:
+  "Ekspertiz kesinlikle önerilir" ifadesini kullan.
+- Kullanıcıyı korkutmadan objektif analiz yap.
+- Emin olmadığın kronik arızalarda kesin konuşma.
+
+AI Skor Kuralları:
+- Kullanıcı bir araç hakkında genel değerlendirme, alınır mı, mantıklı mı, riskli mi diye sorarsa 100 üzerinden AI skor ver.
+- Skoru hesaplarken şu kriterleri dikkate al:
+  - İkinci el değeri
+  - Bakım maliyeti
+  - Kronik sorun riski
+  - Yakıt tüketimi
+  - Konfor
+  - Güvenlik
+  - Parça bulunabilirliği
+  - Piyasa popülerliği
+- Cevap sonunda şu formatı kullan:
+  AutoCompare AI Skoru: X/100
+  Alınabilirlik: Düşük / Orta / Yüksek
+  Kısa Sonuç: ...
+
+Cevap Kalitesi Kuralları:
+- Türkçe cevap ver.
+- Açık, anlaşılır ve kullanıcı dostu ol.
+- Çok teknik konuşma ama profesyonel görün.
+- Cümleleri yarım bırakma.
+- Liste kullanabilirsin.
+- Gereksiz tekrar yapma.
+- Bilmediğin konuda kesin konuşma.
+- Cevabın sonunda mutlaka kısa bir sonuç yaz.
+
+Araç Veritabanı:
+${carDataText}
+`;
+};
+
+const callDeepSeek = async ({ systemPrompt, message, answerProfile }) => {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("DEEPSEEK_API_KEY bulunamadı");
+  }
+
   const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
+    "https://api.deepseek.com/chat/completions",
     {
-      model: "deepseek/deepseek-chat-v3-0324:free",
+      model: "deepseek-chat",
       messages: [
         {
           role: "system",
           content: systemPrompt,
         },
-        ...recentHistory,
         {
           role: "user",
           content: message,
         },
       ],
-      temperature: 0.35,
-      max_tokens: maxTokens,
+      temperature: 0.45,
+      max_tokens: answerProfile.maxTokens,
+      stream: false,
     },
     {
-      timeout,
+      timeout: answerProfile.timeout,
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
     }
   );
 
-  return response.data.choices[0].message.content || "";
+  const answer =
+    response.data &&
+    response.data.choices &&
+    response.data.choices[0] &&
+    response.data.choices[0].message &&
+    response.data.choices[0].message.content
+      ? response.data.choices[0].message.content
+      : "";
+
+  if (!answer || !answer.trim()) {
+    throw new Error("AI boş cevap döndürdü");
+  }
+
+  return answer.trim();
 };
 
-const completeIfNeeded = async ({
-  finalAnswer,
-  systemPrompt,
-}) => {
-  let completedAnswer = finalAnswer.trim();
+const saveChatHistory = async ({ userId, message, answer }) => {
+  if (!userId) return;
 
-  if (!isAnswerIncomplete(completedAnswer)) {
-    return completedAnswer;
-  }
-
-  try {
-    const continuedText = await callAI({
-      systemPrompt,
-      recentHistory: [
-        {
-          role: "assistant",
-          content: completedAnswer,
-        },
-      ],
-      message:
-        "Cevap yarım kaldı. Aynı üslupta kaldığın yerden devam et, eksik bölümü tamamla ve mutlaka kısa bir Sonuç bölümüyle bitir.",
-      maxTokens: 2500,
-      timeout: 70000,
-    });
-
-    if (continuedText.trim().isNotEmpty) {
-      completedAnswer += `\n\n${continuedText.trim()}`;
-    }
-  } catch (error) {
-    console.error("AI CONTINUE ERROR:", error.response?.data || error.message);
-  }
-
-  completedAnswer = completedAnswer.trim();
-
-  if (isAnswerIncomplete(completedAnswer)) {
-    completedAnswer +=
-      "\n\nSonuç: Bu değerlendirme genel analiz niteliğindedir. Satın alma öncesi ekspertiz ve test sürüşü önerilir.";
-  }
-
-  return completedAnswer;
-};
-
-const generateAIAnswer = async ({ message, cars, userId }) => {
-  const relevantCars = findRelevantCars(cars, message);
-
-  const dataSourceMode =
-    relevantCars.length > 0 ? "DATABASE_MATCH" : "GENERAL_KNOWLEDGE";
-
-  const carsForAI = relevantCars.length > 0 ? relevantCars : cars.slice(0, 10);
-
-  const carDataText = createCarDataText(carsForAI);
-
-  const recentHistory = await getRecentChatHistory(userId);
-
-  const systemPrompt = `
-Sen profesyonel bir otomotiv uzmanısın.
-
-Öncelikli çalışma mantığın:
-1. Önce veritabanındaki araç bilgilerine bak.
-2. Veritabanında ilgili araç/veri varsa buna göre cevap ver.
-3. Veritabanında doğrudan bilgi yoksa genel otomotiv bilgisine göre cevap ver.
-4. Emin olmadığın konularda kesin konuşma, öneri dili kullan.
-
-Bilgi kaynağı modu:
-${dataSourceMode}
-
-Kurallar:
-
-Eğer DATABASE_MATCH ise:
-- Öncelikle veritabanındaki araç bilgilerine göre cevap ver.
-- "Veritabanındaki bilgiye göre" ifadesini kullan.
-- Veritabanındaki verileri öncelikli kabul et.
-- Teknik detayları veritabanındaki değerlere göre açıkla.
-- Veritabanında olmayan kesin bilgiler uydurma.
-
-Eğer GENERAL_KNOWLEDGE ise:
-- "Bu araç/veri veritabanımda doğrudan bulunmuyor" ifadesini kullan.
-- Genel otomotiv bilgisine göre yorum yap.
-- Emin olmadığın konularda kesin konuşma.
-- "Genel olarak", "önerilir", "kontrol edilmelidir", "ekspertiz tavsiye edilir" gibi ifadeler kullan.
-
-Karşılaştırma Kuralları:
-- Kullanıcı iki veya daha fazla araç karşılaştırıyorsa:
-  - Her araç için ayrı analiz yap.
-  - Motor performansı karşılaştır.
-  - Yakıt tüketimini karşılaştır.
-  - Bakım maliyetini karşılaştır.
-  - Kronik sorun risklerini karşılaştır.
-  - Şehir içi kullanım uygunluğunu değerlendir.
-  - Uzun yol performansını değerlendir.
-  - İkinci el değer kaybını değerlendir.
-  - Kullanıcı tipine göre hangisinin daha mantıklı olduğunu açıkla.
-  - Sonunda mutlaka "Genel Kazanan" bölümü oluştur.
-
-- Karşılaştırma cevaplarını başlıklar halinde düzenle.
-- Markdown listeleme kullanabilirsin.
-- Cevabı profesyonel ekspertiz raporu gibi hazırla.
-
-Konuşma hafızası:
-- Kullanıcı önceki mesajlarda bir araç, marka, model veya karşılaştırma söylediyse bunu bağlam olarak kullan.
-- Kullanıcı "peki", "hangisi", "yakıtı nasıl", "o araç" gibi takip soruları sorarsa önceki konuşmayı dikkate al.
-- Ama önceki konuşmadan emin değilsen açıkça belirt.
-
-Cevap tarzı:
-- Detaylı cevap ver.
-- Gerekirse uzun analiz yap.
-- Teknik detayları açıklayabilirsin.
-- Karşılaştırmaları detaylandır.
-- Cevabı yarım bırakma.
-- Sonunda mutlaka kısa bir "Sonuç" bölümü yaz.
-- Çok uzun cevap gerekiyorsa cevabı 3 ana bölüm halinde yaz:
-  1. Genel Bakış
-  2. Teknik Karşılaştırma
-  3. Sonuç ve Öneri
-- Her bölümü tamamlanmış cümlelerle yaz.
-- Tek bir maddeyi yarım bırakma.
-- Cevabı çok uzatmak yerine her başlığı net ve tamamlanmış şekilde bitir.
-
-Araç Verileri:
-${carDataText}
-`;
-
-  const rawAnswer = await callAI({
-    systemPrompt,
-    recentHistory,
+  await db.collection("chatHistory").add({
+    userId,
     message,
-    maxTokens: 2500,
-    timeout: 90000,
+    answer,
+    createdAt: new Date(),
+  });
+};
+
+const generateAIAnswer = async ({ req, message }) => {
+  const cars = await getCarsFromDatabase();
+
+  const answerProfile = getAnswerProfile(message);
+
+  const systemPrompt = buildSystemPrompt({
+    message,
+    cars,
+    answerProfile,
   });
 
-  const finalAnswer = await completeIfNeeded({
-    finalAnswer: rawAnswer,
+  const answer = await callDeepSeek({
     systemPrompt,
+    message,
+    answerProfile,
   });
 
-  return {
-    answer: finalAnswer,
-    mode: dataSourceMode,
-    matchedCars: relevantCars.length,
-  };
+  const userId = req.user && req.user.uid ? req.user.uid : null;
+
+  await saveChatHistory({
+    userId,
+    message,
+    answer,
+  });
+
+  return answer;
 };
 
 const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message) {
+    if (!message || !message.trim()) {
       return res.status(400).json({
         success: false,
         message: "Mesaj alanı zorunludur",
       });
     }
 
-    const userId = req.user?.uid || "anonymous";
-
-    const cars = await getCarsFromDatabase();
-
-    const aiResult = await generateAIAnswer({
-      message,
-      cars,
-      userId,
-    });
-
-    await saveChatHistory({
-      userId,
-      message,
-      answer: aiResult.answer,
+    const answer = await generateAIAnswer({
+      req,
+      message: message.trim(),
     });
 
     return res.json({
       success: true,
-      data: aiResult,
+      data: {
+        answer,
+      },
     });
   } catch (error) {
-    console.error("AI CHAT ERROR:", error.response?.data || error.message);
+    console.error("AI CHAT ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: "AI cevabı alınamadı",
+      message: "Yapay zeka cevabı alınamadı",
+      error: error.message,
     });
   }
 };
@@ -369,39 +466,31 @@ const recommendCars = async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (!message) {
+    if (!message || !message.trim()) {
       return res.status(400).json({
         success: false,
         message: "Mesaj alanı zorunludur",
       });
     }
 
-    const userId = req.user?.uid || "anonymous";
-
-    const cars = await getCarsFromDatabase();
-
-    const aiResult = await generateAIAnswer({
-      message,
-      cars,
-      userId,
-    });
-
-    await saveChatHistory({
-      userId,
-      message,
-      answer: aiResult.answer,
+    const answer = await generateAIAnswer({
+      req,
+      message: message.trim(),
     });
 
     return res.json({
       success: true,
-      data: aiResult,
+      data: {
+        answer,
+      },
     });
   } catch (error) {
-    console.error("AI RECOMMEND ERROR:", error.response?.data || error.message);
+    console.error("AI RECOMMEND ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Araç önerisi alınamadı",
+      message: "Yapay zeka önerisi alınamadı",
+      error: error.message,
     });
   }
 };
