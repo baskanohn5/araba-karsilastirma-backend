@@ -1,342 +1,333 @@
 const axios = require("axios");
+
 const db = require("../config/firebase");
 
-const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
-
-const MAX_CARS_FOR_AI = 25;
-
-const sanitizeUserMessage = (message = "") => {
-  return message
-    .replace(/ignore previous instructions/gi, "")
-    .replace(/system prompt/gi, "")
-    .replace(/developer message/gi, "")
-    .trim()
-    .slice(0, 1500);
+const normalizeText = (text = "") => {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/ı/g, "i")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .trim();
 };
 
-const getCarsFromDatabase = async () => {
-  const snapshot = await db.collection("cars").limit(MAX_CARS_FOR_AI).get();
+const findRelevantCars = (
+  cars = [],
+  message = ""
+) => {
+  const normalizedMessage =
+    normalizeText(message);
 
-  const cars = [];
+  const matchedCars = cars.filter(
+    (car) => {
+      const brand = normalizeText(
+        car.brand
+      );
 
-  snapshot.forEach((doc) => {
-    cars.push({
-      id: doc.id,
-      ...doc.data(),
-    });
-  });
+      const model = normalizeText(
+        car.model
+      );
 
-  return cars;
-};
+      const engine = normalizeText(
+        car.engine
+      );
 
-const rankCarsForRecommendation = (cars = []) => {
-  return cars
-    .map((car) => {
-      let score = 0;
+      const fuelType = normalizeText(
+        car.fuelType
+      );
 
-      score += car.secondHandValue || 0;
-      score += car.marketPopularity || 0;
-      score += car.safetyScore || 0;
-      score += car.comfortScore || 0;
-      score += car.performanceScore || 0;
-      score += car.sparePartAvailability || 0;
+      const transmission =
+        normalizeText(
+          car.transmission
+        );
 
-      score -= car.maintenanceCost || 0;
-      score -= car.chronicProblemScore || 0;
-
-      return {
-        ...car,
-        aiRankScore: score,
-      };
-    })
-    .sort((a, b) => b.aiRankScore - a.aiRankScore)
-    .slice(0, 10);
-};
-
-const formatEquipment = (equipment = {}) => {
-  const labels = {
-    multimedia: "Multimedya",
-    appleCarPlay: "Apple CarPlay",
-    androidAuto: "Android Auto",
-    sunroof: "Sunroof",
-    leatherSeat: "Deri Koltuk",
-    adaptiveCruiseControl: "Adaptif hız sabitleyici",
-    laneAssist: "Şerit takip",
-    blindSpotWarning: "Kör nokta uyarı",
-    rearCamera: "Geri görüş kamerası",
-    parkingSensor: "Park sensörü",
-    digitalDisplay: "Dijital gösterge",
-    automaticClimate: "Otomatik klima",
-  };
-
-  return Object.entries(labels)
-    .map(([key, label]) => {
-      return `${label}: ${equipment[key] ? "Var" : "Yok"}`;
-    })
-    .join("\n");
-};
-
-const formatList = (items = []) => {
-  if (!Array.isArray(items) || items.length === 0) {
-    return "Bilgi yok";
-  }
-
-  return items
-    .slice(0, 5)
-    .map((item) => `- ${item}`)
-    .join("\n");
-};
-
-const createCarDataText = (cars) => {
-  return cars
-    .map((car) => {
-      return `
-Araç ID: ${car.id}
-Marka: ${car.brand}
-Model: ${car.model}
-Yıl: ${car.year}
-Motor: ${car.engine}
-Yakıt: ${car.fuelType}
-Vites: ${car.transmission}
-Kasa: ${car.bodyType}
-Fiyat: ${car.minPrice} - ${car.maxPrice} TL
-Yakıt Tüketimi: ${car.averageFuel} L/100 km
-Tutulma: ${car.marketPopularity}/10
-Parça: ${car.sparePartAvailability}/10
-Bakım: ${car.maintenanceCost}/10
-2. El: ${car.secondHandValue}/10
-Kronik Sorun: ${car.chronicProblemScore}/10
-Konfor: ${car.comfortScore || 0}/10
-Performans: ${car.performanceScore || 0}/10
-Güvenlik: ${car.safetyScore || 0}/10
-AI Öneri Skoru: ${car.aiRankScore || "Hesaplanmadı"}
-HP: ${car.horsePower || 0}
-Bagaj: ${car.trunkVolume || 0}L
-
-Donanım:
-${formatEquipment(car.equipment)}
-
-Artılar:
-${formatList(car.pros)}
-
-Eksiler:
-${formatList(car.cons)}
-`;
-    })
-    .join("\n------------------\n");
-};
-
-const askDeepSeek = async (systemPrompt, userMessage) => {
-  const response = await axios.post(
-    DEEPSEEK_API_URL,
-    {
-      model: "deepseek-chat",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: userMessage,
-        },
-      ],
-      temperature: 0.35,
-      max_tokens: 1200,
-    },
-    {
-      timeout: 25000,
-      headers: {
-        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      return (
+        normalizedMessage.includes(
+          brand
+        ) ||
+        normalizedMessage.includes(
+          model
+        ) ||
+        normalizedMessage.includes(
+          `${brand} ${model}`
+        ) ||
+        normalizedMessage.includes(
+          engine
+        ) ||
+        normalizedMessage.includes(
+          fuelType
+        ) ||
+        normalizedMessage.includes(
+          transmission
+        )
+      );
     }
   );
 
-  return response.data.choices[0].message.content;
+  return matchedCars.slice(0, 10);
 };
 
-const chatWithAI = async (req, res) => {
-  try {
-    const userId = req.user.uid;
-    const rawMessage = req.body.message;
+const getCarsFromDatabase =
+  async () => {
+    const snapshot =
+      await db.collection("cars").get();
 
-    if (!rawMessage) {
-      return res.status(400).json({
-        success: false,
-        message: "Mesaj alanı zorunludur",
-      });
-    }
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  };
 
-    const message = sanitizeUserMessage(rawMessage);
+const createCarDataText = (
+  cars = []
+) => {
+  return cars
+    .map((car) => {
+      return `
+Marka: ${car.brand || ""}
+Model: ${car.model || ""}
+Yıl: ${car.year || ""}
+Motor: ${car.engine || ""}
+Yakıt: ${car.fuelType || ""}
+Vites: ${car.transmission || ""}
+Kasa: ${car.bodyType || ""}
+Minimum Fiyat: ${
+        car.minPrice || 0
+      }
+Maximum Fiyat: ${
+        car.maxPrice || 0
+      }
+Yakıt Tüketimi: ${
+        car.averageFuel || 0
+      }
+Piyasa Popülerliği: ${
+        car.marketPopularity || 0
+      }
+Yedek Parça: ${
+        car.sparePartAvailability || 0
+      }
+Bakım Maliyeti: ${
+        car.maintenanceCost || 0
+      }
+2. El Değeri: ${
+        car.secondHandValue || 0
+      }
+Kronik Problem Skoru: ${
+        car.chronicProblemScore || 0
+      }
+`;
+    })
+    .join("\n-----------------\n");
+};
 
-    const cars = await getCarsFromDatabase();
-    const carDataText = createCarDataText(cars);
+const saveChatHistory = async ({
+  userId,
+  message,
+  answer,
+}) => {
+  await db
+    .collection("chatHistory")
+    .add({
+      userId,
+      message,
+      answer,
+      createdAt:
+        new Date().toISOString(),
+    });
+};
 
-    const systemPrompt = `
-Sen AutoCompare uygulamasının premium araç uzmanı, ikinci el danışmanı ve profesyonel ekspertiz yorumcususun.
+const generateAIAnswer = async ({
+  message,
+  cars,
+}) => {
+  const relevantCars =
+    findRelevantCars(
+      cars,
+      message
+    );
 
-Görevlerin:
-- Kullanıcıya araç seçimi konusunda yardımcı olmak
-- Teknik analiz yapmak
-- Avantaj/dezavantaj belirtmek
-- Kullanıcıyı riskli araçlardan korumak
-- Premium danışman hissi vermek
+  const dataSourceMode =
+    relevantCars.length > 0
+      ? "DATABASE_MATCH"
+      : "GENERAL_KNOWLEDGE";
+
+  const carsForAI =
+    relevantCars.length > 0
+      ? relevantCars
+      : cars.slice(0, 10);
+
+  const carDataText =
+    createCarDataText(
+      carsForAI
+    );
+
+  const systemPrompt = `
+Sen profesyonel bir otomotiv uzmanısın.
+
+Bilgi kaynağı modu:
+${dataSourceMode}
 
 Kurallar:
-- Gereksiz uzun cevap verme
-- Maddeli yaz
-- Profesyonel konuş
-- Teknik ama anlaşılır ol
-- Emin olmadığın konuda kesin konuşma
-- Gerektiğinde ekspertiz öner
-- Kullanıcıyı yanıltma
-- Fiyatların değişebileceğini belirt
 
-Araç varsa:
-- Motor
-- Yakıt
-- Performans
-- Konfor
-- Güvenlik
-- Kronik sorun
-- İkinci el piyasası
-- Donanım
-- Uzun yol
-- Şehir içi kullanım
+Eğer DATABASE_MATCH ise:
+- Öncelikle veritabanındaki araç bilgilerine göre cevap ver.
+- "Veritabanındaki bilgiye göre" ifadesini kullan.
+- Veritabanındaki verileri öncelikli kabul et.
+- Teknik detayları veritabanındaki değerlere göre açıkla.
+- Veritabanında olmayan kesin bilgiler uydurma.
 
-konularında yorum yap.
+Eğer GENERAL_KNOWLEDGE ise:
+- "Bu araç/veri veritabanımda doğrudan bulunmuyor" ifadesini kullan.
+- Genel otomotiv bilgisine göre yorum yap.
+- Emin olmadığın konularda kesin konuşma.
+- "Genel olarak", "önerilir", "kontrol edilmelidir", "ekspertiz tavsiye edilir" gibi ifadeler kullan.
 
-Araç yoksa:
-- Genel ikinci el mantığıyla yorum yap
-- Kesin donanım veya arıza iddiası verme
+Kullanıcıya kısa, profesyonel ve anlaşılır cevap ver.
 
-Cevap tonu:
-Premium, güven veren, uzman seviyesi.
-
-Araç verileri:
+Araç Verileri:
 ${carDataText}
 `;
 
-    const answer = await askDeepSeek(systemPrompt, message);
+  const response =
+    await axios.post(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        model:
+          "deepseek/deepseek-chat-v3-0324:free",
 
-    await db.collection("chatHistory").add({
-      userId,
-      question: message,
-      answer,
-      createdAt: new Date(),
+        messages: [
+          {
+            role: "system",
+            content:
+              systemPrompt,
+          },
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type":
+            "application/json",
+        },
+      }
+    );
+
+  return {
+    answer:
+      response.data.choices[0]
+        .message.content,
+
+    mode: dataSourceMode,
+
+    matchedCars:
+      relevantCars.length,
+  };
+};
+
+const chatWithAI = async (
+  req,
+  res
+) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Mesaj alanı zorunludur",
+      });
+    }
+
+    const cars =
+      await getCarsFromDatabase();
+
+    const aiResult =
+      await generateAIAnswer({
+        message,
+        cars,
+      });
+
+    await saveChatHistory({
+      userId:
+        req.user?.uid || "anonymous",
+      message,
+      answer: aiResult.answer,
     });
 
     return res.json({
       success: true,
-      data: {
-        answer,
-      },
+      data: aiResult,
     });
   } catch (error) {
-    console.error("AI CHAT ERROR:", error.response?.data || error.message);
+    console.error(
+      "AI CHAT ERROR:",
+      error.response?.data ||
+        error.message
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Yapay zeka cevabı alınamadı",
+      message:
+        "AI cevabı alınamadı",
     });
   }
 };
 
-const recommendCars = async (req, res) => {
+const recommendCars = async (
+  req,
+  res
+) => {
   try {
-    const userId = req.user.uid;
-    const rawMessage = req.body.message;
+    const { message } = req.body;
 
-    if (!rawMessage) {
+    if (!message) {
       return res.status(400).json({
         success: false,
-        message: "Mesaj alanı zorunludur",
+        message:
+          "Mesaj alanı zorunludur",
       });
     }
 
-    const message = sanitizeUserMessage(rawMessage);
+    const cars =
+      await getCarsFromDatabase();
 
-    const cars = await getCarsFromDatabase();
-
-    if (cars.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Veritabanında araç bulunamadı",
+    const aiResult =
+      await generateAIAnswer({
+        message,
+        cars,
       });
-    }
 
-    const rankedCars = rankCarsForRecommendation(cars);
-    const carDataText = createCarDataText(rankedCars);
-
-    const systemPrompt = `
-Sen AutoCompare uygulamasının premium araç öneri uzmanısın.
-
-Backend sana araçları önceden skorlayıp sıralayarak verir.
-AI Öneri Skoru yüksek olan araçlar genel olarak daha mantıklı seçeneklerdir.
-
-Görev:
-- Kullanıcıya en uygun araçları seçmek
-- Uzun vadeli mantıklı seçim önermek
-- Teknik analiz yapmak
-- Kullanıcıyı yanlış tercihten korumak
-- Veritabanındaki araçlardan öneri yapmak
-
-Dikkate alınacaklar:
-- AI Öneri Skoru
-- Yakıt tüketimi
-- Bakım maliyeti
-- Performans
-- Aile kullanımı
-- Şehir içi kullanım
-- Uzun yol
-- İkinci el değeri
-- Kronik sorun riski
-- Güvenlik
-- Donanım
-
-Cevap formatı:
-1. Genel değerlendirme
-2. En mantıklı araç
-3. Alternatif seçenekler
-4. Avantajlar
-5. Dezavantajlar
-6. Uzun vadeli yorum
-7. Sonuç
-
-Kurallar:
-- Sadece verilen araç datasına göre öneri yap
-- Araç datasında olmayan kesin iddialar kurma
-- Gerektiğinde ekspertiz öner
-- Fiyatların değişebileceğini belirt
-- Premium ve güven veren konuş
-- Gereksiz uzun yazma
-
-Araç verileri:
-${carDataText}
-`;
-
-    const answer = await askDeepSeek(systemPrompt, message);
-
-    await db.collection("chatHistory").add({
-      userId,
-      question: `[ÖNERİ] ${message}`,
-      answer,
-      createdAt: new Date(),
+    await saveChatHistory({
+      userId:
+        req.user?.uid || "anonymous",
+      message,
+      answer: aiResult.answer,
     });
 
     return res.json({
       success: true,
-      data: {
-        answer,
-      },
+      data: aiResult,
     });
   } catch (error) {
-    console.error("AI RECOMMEND ERROR:", error.response?.data || error.message);
+    console.error(
+      "AI RECOMMEND ERROR:",
+      error.response?.data ||
+        error.message
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Araç önerisi alınamadı",
+      message:
+        "Araç önerisi alınamadı",
     });
   }
 };
