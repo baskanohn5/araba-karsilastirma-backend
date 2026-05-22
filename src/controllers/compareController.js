@@ -66,58 +66,114 @@ const compareCars = async (req, res) => {
       ...car2Doc.data(),
     };
 
-    let car1Score = 0;
-    let car2Score = 0;
+    const car1Breakdown = {
+      comfort:
+          car1.comfortScore || 0,
 
-    const fuelResult = compareNumber(
-      car1.averageFuel,
-      car2.averageFuel,
-      false
-    );
+      performance:
+          car1.performanceScore || 0,
 
-    car1Score += fuelResult.car1Point;
-    car2Score += fuelResult.car2Point;
+      safety:
+          car1.safetyScore || 0,
 
-    const comfortResult = compareNumber(
-      car1.comfortScore,
-      car2.comfortScore,
-      true
-    );
+      longRoad:
+          car1.longRoadScore || 0,
 
-    car1Score += comfortResult.car1Point;
-    car2Score += comfortResult.car2Point;
+      secondHand:
+          car1.secondHandScore || 0,
 
-    const performanceResult = compareNumber(
-      car1.performanceScore,
-      car2.performanceScore,
-      true
-    );
+      fuel:
+          10 -
+          (car1.averageFuel || 0),
 
-    car1Score += performanceResult.car1Point;
-    car2Score += performanceResult.car2Point;
+      maintenance:
+          car1.maintenanceScore || 0,
 
-    const safetyResult = compareNumber(
-      car1.safetyScore,
-      car2.safetyScore,
-      true
-    );
+      sparePart:
+          car1.sparePartScore || 0,
+    };
 
-    car1Score += safetyResult.car1Point;
-    car2Score += safetyResult.car2Point;
+    const car2Breakdown = {
+      comfort:
+          car2.comfortScore || 0,
+
+      performance:
+          car2.performanceScore || 0,
+
+      safety:
+          car2.safetyScore || 0,
+
+      longRoad:
+          car2.longRoadScore || 0,
+
+      secondHand:
+          car2.secondHandScore || 0,
+
+      fuel:
+          10 -
+          (car2.averageFuel || 0),
+
+      maintenance:
+          car2.maintenanceScore || 0,
+
+      sparePart:
+          car2.sparePartScore || 0,
+    };
+
+    const car1Score =
+        Object.values(
+          car1Breakdown
+        ).reduce(
+          (a, b) => a + b,
+          0
+        );
+
+    const car2Score =
+        Object.values(
+          car2Breakdown
+        ).reduce(
+          (a, b) => a + b,
+          0
+        );
 
     let winner = "Berabere";
 
     if (car1Score > car2Score) {
       winner = carName(car1);
-    } else if (car2Score > car1Score) {
+    } else if (
+      car2Score > car1Score
+    ) {
       winner = carName(car2);
     }
 
     const comment = `
-${carName(car1)} toplam ${car1Score} puan aldı.
-${carName(car2)} toplam ${car2Score} puan aldı.
+🏆 Sonuç
 
-Kazanan araç: ${winner}
+${carName(car1)} toplam ${car1Score.toFixed(1)} puan aldı.
+
+- Konfor: ${car1Breakdown.comfort}
+- Performans: ${car1Breakdown.performance}
+- Güvenlik: ${car1Breakdown.safety}
+- Uzun Yol: ${car1Breakdown.longRoad}
+- İkinci El: ${car1Breakdown.secondHand}
+- Yakıt: ${car1Breakdown.fuel.toFixed(1)}
+- Bakım: ${car1Breakdown.maintenance}
+- Parça: ${car1Breakdown.sparePart}
+
+----------------------------
+
+${carName(car2)} toplam ${car2Score.toFixed(1)} puan aldı.
+
+- Konfor: ${car2Breakdown.comfort}
+- Performans: ${car2Breakdown.performance}
+- Güvenlik: ${car2Breakdown.safety}
+- Uzun Yol: ${car2Breakdown.longRoad}
+- İkinci El: ${car2Breakdown.secondHand}
+- Yakıt: ${car2Breakdown.fuel.toFixed(1)}
+- Bakım: ${car2Breakdown.maintenance}
+- Parça: ${car2Breakdown.sparePart}
+
+🏁 Kazanan: ${winner}
 `.trim();
 
     res.json({
@@ -127,26 +183,33 @@ Kazanan araç: ${winner}
           id: car1.id,
           name: carName(car1),
           score: car1Score,
+          breakdown: car1Breakdown,
         },
+
         car2: {
           id: car2.id,
           name: carName(car2),
           score: car2Score,
+          breakdown: car2Breakdown,
         },
+
         winner,
         comment,
       },
     });
   } catch (error) {
-    console.error("COMPARE CARS ERROR:", error);
+    console.error(
+      "COMPARE CARS ERROR:",
+      error
+    );
 
     res.status(500).json({
       success: false,
-      message: "Karşılaştırma işlemi başarısız oldu",
+      message:
+          "Karşılaştırma işlemi başarısız oldu",
     });
   }
 };
-
 const saveCompareResult = async (req, res) => {
   try {
     const userId = req.user.uid;
