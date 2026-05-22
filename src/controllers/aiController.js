@@ -292,6 +292,13 @@ Cevap tarzı:
 - Karşılaştırmaları detaylandır.
 - Cevabı yarım bırakma.
 - Sonunda mutlaka kısa bir "Sonuç" bölümü yaz.
+- Çok uzun cevap gerekiyorsa cevabı 3 ana bölüm halinde yaz:
+  1. Genel Bakış
+  2. Teknik Karşılaştırma
+  3. Sonuç ve Öneri
+- Her bölümü tamamlanmış cümlelerle yaz.
+- Tek bir maddeyi yarım bırakma.
+- Cevabı çok uzatmak yerine her başlığı net ve tamamlanmış şekilde bitir.
 
 Araç Verileri:
 ${carDataText}
@@ -301,7 +308,7 @@ ${carDataText}
     systemPrompt,
     recentHistory,
     message,
-    maxTokens: 5000,
+    maxTokens: 2500,
     timeout: 90000,
   });
 
