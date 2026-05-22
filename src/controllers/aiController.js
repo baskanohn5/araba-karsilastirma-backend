@@ -325,6 +325,29 @@ AI Skor Kuralları:
   Alınabilirlik: Düşük / Orta / Yüksek
   Kısa Sonuç: ...
 
+  Persona Analiz Kuralları:
+- Kullanıcının yaşam tarzını analiz et.
+- Kullanıcı tipi çıkar:
+  - Öğrenci
+  - Aile
+  - Şehir içi kullanıcı
+  - Uzun yol kullanıcısı
+  - Performans odaklı kullanıcı
+  - Ekonomik kullanım odaklı kullanıcı
+  - Premium konfor isteyen kullanıcı
+
+- Araç önerilerini kullanıcı tipine göre değerlendir.
+- Her araç için:
+  - Kimlere uygun?
+  - Kimlere uygun değil?
+  - Günlük kullanım avantajı
+  - Uzun vadeli sahiplik avantajı
+  yaz.
+
+- Sonunda:
+  "Bu araç en çok şu kullanıcı tipine uygundur:"
+  bölümü oluştur.
+
 Cevap Kalitesi Kuralları:
 - Türkçe cevap ver.
 - Açık, anlaşılır ve kullanıcı dostu ol.
