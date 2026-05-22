@@ -1,31 +1,42 @@
 const db = require("../config/firebase");
 
-const compareNumber = (
-  car1Value,
-  car2Value,
-  higherIsBetter = true
-) => {
-  if (car1Value === undefined || car2Value === undefined) {
-    return { car1Point: 0, car2Point: 0 };
-  }
+const numberValue = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
 
-  if (car1Value === car2Value) {
-    return { car1Point: 5, car2Point: 5 };
-  }
+const fuelScore = (averageFuel) => {
+  const fuel = numberValue(averageFuel);
 
-  if (higherIsBetter) {
-    return car1Value > car2Value
-      ? { car1Point: 10, car2Point: 0 }
-      : { car1Point: 0, car2Point: 10 };
-  }
+  if (fuel <= 0) return 0;
 
-  return car1Value < car2Value
-    ? { car1Point: 10, car2Point: 0 }
-    : { car1Point: 0, car2Point: 10 };
+  const score = 10 - fuel;
+
+  return score < 0 ? 0 : score;
+};
+
+const sumScores = (breakdown) => {
+  return Object.values(breakdown).reduce((total, value) => {
+    return total + numberValue(value);
+  }, 0);
 };
 
 const carName = (car) => {
   return `${car.brand} ${car.model} ${car.year} ${car.engine} ${car.fuelType} ${car.transmission}`;
+};
+
+const createBreakdown = (car) => {
+  return {
+    comfort: numberValue(car.comfortScore),
+    performance: numberValue(car.performanceScore),
+    safety: numberValue(car.safetyScore),
+    longRoad: numberValue(car.longRoadScore),
+    secondHand: numberValue(car.secondHandValue),
+    fuel: fuelScore(car.averageFuel),
+    maintenance: numberValue(car.maintenanceCost),
+    sparePart: numberValue(car.sparePartAvailability),
+    popularity: numberValue(car.marketPopularity),
+  };
 };
 
 const compareCars = async (req, res) => {
@@ -39,15 +50,8 @@ const compareCars = async (req, res) => {
       });
     }
 
-    const car1Doc = await db
-      .collection("cars")
-      .doc(car1Id)
-      .get();
-
-    const car2Doc = await db
-      .collection("cars")
-      .doc(car2Id)
-      .get();
+    const car1Doc = await db.collection("cars").doc(car1Id).get();
+    const car2Doc = await db.collection("cars").doc(car2Id).get();
 
     if (!car1Doc.exists || !car2Doc.exists) {
       return res.status(404).json({
@@ -66,83 +70,17 @@ const compareCars = async (req, res) => {
       ...car2Doc.data(),
     };
 
-    const car1Breakdown = {
-      comfort:
-          car1.comfortScore || 0,
+    const car1Breakdown = createBreakdown(car1);
+    const car2Breakdown = createBreakdown(car2);
 
-      performance:
-          car1.performanceScore || 0,
-
-      safety:
-          car1.safetyScore || 0,
-
-      longRoad:
-          car1.longRoadScore || 0,
-
-      secondHand:
-          car1.secondHandScore || 0,
-
-      fuel:
-          10 -
-          (car1.averageFuel || 0),
-
-      maintenance:
-          car1.maintenanceScore || 0,
-
-      sparePart:
-          car1.sparePartScore || 0,
-    };
-
-    const car2Breakdown = {
-      comfort:
-          car2.comfortScore || 0,
-
-      performance:
-          car2.performanceScore || 0,
-
-      safety:
-          car2.safetyScore || 0,
-
-      longRoad:
-          car2.longRoadScore || 0,
-
-      secondHand:
-          car2.secondHandScore || 0,
-
-      fuel:
-          10 -
-          (car2.averageFuel || 0),
-
-      maintenance:
-          car2.maintenanceScore || 0,
-
-      sparePart:
-          car2.sparePartScore || 0,
-    };
-
-    const car1Score =
-        Object.values(
-          car1Breakdown
-        ).reduce(
-          (a, b) => a + b,
-          0
-        );
-
-    const car2Score =
-        Object.values(
-          car2Breakdown
-        ).reduce(
-          (a, b) => a + b,
-          0
-        );
+    const car1Score = sumScores(car1Breakdown);
+    const car2Score = sumScores(car2Breakdown);
 
     let winner = "Berabere";
 
     if (car1Score > car2Score) {
       winner = carName(car1);
-    } else if (
-      car2Score > car1Score
-    ) {
+    } else if (car2Score > car1Score) {
       winner = carName(car2);
     }
 
@@ -159,6 +97,7 @@ ${carName(car1)} toplam ${car1Score.toFixed(1)} puan aldı.
 - Yakıt: ${car1Breakdown.fuel.toFixed(1)}
 - Bakım: ${car1Breakdown.maintenance}
 - Parça: ${car1Breakdown.sparePart}
+- Popülerlik: ${car1Breakdown.popularity}
 
 ----------------------------
 
@@ -172,11 +111,12 @@ ${carName(car2)} toplam ${car2Score.toFixed(1)} puan aldı.
 - Yakıt: ${car2Breakdown.fuel.toFixed(1)}
 - Bakım: ${car2Breakdown.maintenance}
 - Parça: ${car2Breakdown.sparePart}
+- Popülerlik: ${car2Breakdown.popularity}
 
 🏁 Kazanan: ${winner}
 `.trim();
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         car1: {
@@ -185,31 +125,26 @@ ${carName(car2)} toplam ${car2Score.toFixed(1)} puan aldı.
           score: car1Score,
           breakdown: car1Breakdown,
         },
-
         car2: {
           id: car2.id,
           name: carName(car2),
           score: car2Score,
           breakdown: car2Breakdown,
         },
-
         winner,
         comment,
       },
     });
   } catch (error) {
-    console.error(
-      "COMPARE CARS ERROR:",
-      error
-    );
+    console.error("COMPARE CARS ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message:
-          "Karşılaştırma işlemi başarısız oldu",
+      message: "Karşılaştırma işlemi başarısız oldu",
     });
   }
 };
+
 const saveCompareResult = async (req, res) => {
   try {
     const userId = req.user.uid;
@@ -245,11 +180,9 @@ const saveCompareResult = async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    const docRef = await db
-      .collection("compareResults")
-      .add(savedCompare);
+    const docRef = await db.collection("compareResults").add(savedCompare);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Karşılaştırma sonucu kaydedildi",
       data: {
@@ -260,7 +193,7 @@ const saveCompareResult = async (req, res) => {
   } catch (error) {
     console.error("SAVE COMPARE RESULT ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Karşılaştırma sonucu kaydedilemedi",
     });
@@ -282,25 +215,20 @@ const getUserCompareResults = async (req, res) => {
         ...doc.data(),
       }))
       .sort((a, b) => {
-        const dateA = a.createdAt
-          ? new Date(a.createdAt).getTime()
-          : 0;
-
-        const dateB = b.createdAt
-          ? new Date(b.createdAt).getTime()
-          : 0;
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
 
         return dateB - dateA;
       });
 
-    res.json({
+    return res.json({
       success: true,
       data: results,
     });
   } catch (error) {
     console.error("GET USER COMPARES ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Karşılaştırmalar alınamadı",
     });
@@ -320,10 +248,7 @@ const deleteCompareResult = async (req, res) => {
       });
     }
 
-    const compareDoc = await db
-      .collection("compareResults")
-      .doc(id)
-      .get();
+    const compareDoc = await db.collection("compareResults").doc(id).get();
 
     if (!compareDoc.exists) {
       return res.status(404).json({
@@ -343,14 +268,14 @@ const deleteCompareResult = async (req, res) => {
 
     await db.collection("compareResults").doc(id).delete();
 
-    res.json({
+    return res.json({
       success: true,
       message: "Karşılaştırma kaydı silindi",
     });
   } catch (error) {
     console.error("DELETE COMPARE RESULT ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Karşılaştırma silinemedi",
     });
