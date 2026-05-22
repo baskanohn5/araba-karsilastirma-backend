@@ -15,7 +15,10 @@ const normalizeText = (text = "") => {
     .trim();
 };
 
-const findRelevantCars = (cars = [], message = "") => {
+const findRelevantCars = (
+  cars = [],
+  message = ""
+) => {
   const normalizedMessage =
     normalizeText(message);
 
@@ -298,10 +301,10 @@ ${carDataText}
 
           temperature: 0.35,
 
-          max_tokens: 4000,
+          max_tokens: 5000,
         },
         {
-          timeout: 60000,
+          timeout: 90000,
 
           headers: {
             Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -311,10 +314,25 @@ ${carDataText}
         }
       );
 
+    let finalAnswer =
+      response.data.choices[0]
+        .message.content || "";
+
+    finalAnswer =
+      finalAnswer.trim();
+
+    const endsCorrectly =
+      finalAnswer.endsWith(".") ||
+      finalAnswer.endsWith("!") ||
+      finalAnswer.endsWith("?");
+
+    if (!endsCorrectly) {
+      finalAnswer +=
+        "\n\nSonuç: Bu değerlendirme genel analiz niteliğindedir. Satın alma öncesi ekspertiz ve test sürüşü önerilir.";
+    }
+
     return {
-      answer:
-        response.data.choices[0]
-          .message.content,
+      answer: finalAnswer,
 
       mode: dataSourceMode,
 
