@@ -171,37 +171,49 @@ Cevap tarzı:
 - Kısa, profesyonel ve anlaşılır cevap ver.
 - Gereksiz kesin iddialardan kaçın.
 - Satın alma öncesi ekspertiz öner.
+- Detaylı cevap ver.
+- Gerekirse uzun analiz yap.
+- Teknik detayları açıklayabilirsin.
+- Karşılaştırmaları detaylandır.
+- Cevabı yarım bırakma.
+- Sonunda mutlaka kısa bir "Sonuç" bölümü yaz.
 
 Araç Verileri:
 ${carDataText}
 `;
 
-  const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model: "deepseek/deepseek-chat-v3-0324:free",
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        ...recentHistory,
-        {
-          role: "user",
-          content: message,
-        },
-      ],
-      temperature: 0.35,
-      max_tokens: 1200,
-    },
-    {
-      timeout: 25000,
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
+ const response = await axios.post(
+  "https://openrouter.ai/api/v1/chat/completions",
+  {
+    model: "deepseek/deepseek-chat-v3-0324:free",
+
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
       },
-    }
-  );
+
+      ...recentHistory,
+
+      {
+        role: "user",
+        content: message,
+      },
+    ],
+
+    temperature: 0.35,
+
+    max_tokens: 4000,
+  },
+  {
+    timeout: 60000,
+
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
 
   return {
     answer: response.data.choices[0].message.content,
