@@ -15,76 +15,39 @@ const normalizeText = (text = "") => {
     .trim();
 };
 
-const findRelevantCars = (
-  cars = [],
-  message = ""
-) => {
-  const normalizedMessage =
-    normalizeText(message);
+const findRelevantCars = (cars = [], message = "") => {
+  const normalizedMessage = normalizeText(message);
 
-  const matchedCars = cars.filter(
-    (car) => {
-      const brand = normalizeText(
-        car.brand
-      );
+  const matchedCars = cars.filter((car) => {
+    const brand = normalizeText(car.brand);
+    const model = normalizeText(car.model);
+    const engine = normalizeText(car.engine);
+    const fuelType = normalizeText(car.fuelType);
+    const transmission = normalizeText(car.transmission);
 
-      const model = normalizeText(
-        car.model
-      );
-
-      const engine = normalizeText(
-        car.engine
-      );
-
-      const fuelType = normalizeText(
-        car.fuelType
-      );
-
-      const transmission =
-        normalizeText(
-          car.transmission
-        );
-
-      return (
-        normalizedMessage.includes(
-          brand
-        ) ||
-        normalizedMessage.includes(
-          model
-        ) ||
-        normalizedMessage.includes(
-          `${brand} ${model}`
-        ) ||
-        normalizedMessage.includes(
-          engine
-        ) ||
-        normalizedMessage.includes(
-          fuelType
-        ) ||
-        normalizedMessage.includes(
-          transmission
-        )
-      );
-    }
-  );
+    return (
+      normalizedMessage.includes(brand) ||
+      normalizedMessage.includes(model) ||
+      normalizedMessage.includes(`${brand} ${model}`) ||
+      normalizedMessage.includes(engine) ||
+      normalizedMessage.includes(fuelType) ||
+      normalizedMessage.includes(transmission)
+    );
+  });
 
   return matchedCars.slice(0, 10);
 };
 
-const getCarsFromDatabase =
-  async () => {
-    const snapshot =
-      await db.collection("cars").get();
+const getCarsFromDatabase = async () => {
+  const snapshot = await db.collection("cars").get();
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-  };
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
 
-const createCarDataText = (
-  cars = []
-) => {
+const createCarDataText = (cars = []) => {
   return cars
     .map((car) => {
       return `
@@ -95,33 +58,50 @@ Motor: ${car.engine || ""}
 Yakıt: ${car.fuelType || ""}
 Vites: ${car.transmission || ""}
 Kasa: ${car.bodyType || ""}
-Minimum Fiyat: ${
-        car.minPrice || 0
-      }
-Maximum Fiyat: ${
-        car.maxPrice || 0
-      }
-Yakıt Tüketimi: ${
-        car.averageFuel || 0
-      }
-Piyasa Popülerliği: ${
-        car.marketPopularity || 0
-      }
-Yedek Parça: ${
-        car.sparePartAvailability || 0
-      }
-Bakım Maliyeti: ${
-        car.maintenanceCost || 0
-      }
-2. El Değeri: ${
-        car.secondHandValue || 0
-      }
-Kronik Problem Skoru: ${
-        car.chronicProblemScore || 0
-      }
+Minimum Fiyat: ${car.minPrice || 0}
+Maximum Fiyat: ${car.maxPrice || 0}
+Yakıt Tüketimi: ${car.averageFuel || 0}
+Piyasa Popülerliği: ${car.marketPopularity || 0}
+Yedek Parça: ${car.sparePartAvailability || 0}
+Bakım Maliyeti: ${car.maintenanceCost || 0}
+2. El Değeri: ${car.secondHandValue || 0}
+Kronik Problem Skoru: ${car.chronicProblemScore || 0}
 `;
     })
     .join("\n-----------------\n");
+};
+
+const getRecentChatHistory = async (userId) => {
+  if (!userId || userId === "anonymous") {
+    return [];
+  }
+
+  const snapshot = await db
+    .collection("chatHistory")
+    .where("userId", "==", userId)
+    .orderBy("createdAt", "desc")
+    .limit(5)
+    .get();
+
+  const history = [];
+
+  snapshot.docs.reverse().forEach((doc) => {
+    const data = doc.data();
+
+    if (data.message && data.answer) {
+      history.push({
+        role: "user",
+        content: data.message,
+      });
+
+      history.push({
+        role: "assistant",
+        content: data.answer,
+      });
+    }
+  });
+
+  return history;
 };
 
 const saveChatHistory = async ({
@@ -129,44 +109,40 @@ const saveChatHistory = async ({
   message,
   answer,
 }) => {
-  await db
-    .collection("chatHistory")
-    .add({
-      userId,
-      message,
-      answer,
-      createdAt:
-        new Date().toISOString(),
-    });
+  await db.collection("chatHistory").add({
+    userId,
+    message,
+    question: message,
+    answer,
+    createdAt: new Date().toISOString(),
+  });
 };
 
 const generateAIAnswer = async ({
   message,
   cars,
+  userId,
 }) => {
-  const relevantCars =
-    findRelevantCars(
-      cars,
-      message
-    );
+  const relevantCars = findRelevantCars(cars, message);
 
   const dataSourceMode =
-    relevantCars.length > 0
-      ? "DATABASE_MATCH"
-      : "GENERAL_KNOWLEDGE";
+    relevantCars.length > 0 ? "DATABASE_MATCH" : "GENERAL_KNOWLEDGE";
 
   const carsForAI =
-    relevantCars.length > 0
-      ? relevantCars
-      : cars.slice(0, 10);
+    relevantCars.length > 0 ? relevantCars : cars.slice(0, 10);
 
-  const carDataText =
-    createCarDataText(
-      carsForAI
-    );
+  const carDataText = createCarDataText(carsForAI);
+
+  const recentHistory = await getRecentChatHistory(userId);
 
   const systemPrompt = `
 Sen profesyonel bir otomotiv uzmanısın.
+
+Öncelikli çalışma mantığın:
+1. Önce veritabanındaki araç bilgilerine bak.
+2. Veritabanında ilgili araç/veri varsa buna göre cevap ver.
+3. Veritabanında doğrudan bilgi yoksa genel otomotiv bilgisine göre cevap ver.
+4. Emin olmadığın konularda kesin konuşma, öneri dili kullan.
 
 Bilgi kaynağı modu:
 ${dataSourceMode}
@@ -186,79 +162,77 @@ Eğer GENERAL_KNOWLEDGE ise:
 - Emin olmadığın konularda kesin konuşma.
 - "Genel olarak", "önerilir", "kontrol edilmelidir", "ekspertiz tavsiye edilir" gibi ifadeler kullan.
 
-Kullanıcıya kısa, profesyonel ve anlaşılır cevap ver.
+Konuşma hafızası:
+- Kullanıcı önceki mesajlarda bir araç, marka, model veya karşılaştırma söylediyse bunu bağlam olarak kullan.
+- Kullanıcı "peki", "hangisi", "yakıtı nasıl", "o araç" gibi takip soruları sorarsa önceki konuşmayı dikkate al.
+- Ama önceki konuşmadan emin değilsen açıkça "Önceki konuşmaya göre..." veya "Eğer bahsettiğiniz araç buysa..." şeklinde cevap ver.
+
+Cevap tarzı:
+- Kısa, profesyonel ve anlaşılır cevap ver.
+- Gereksiz kesin iddialardan kaçın.
+- Satın alma öncesi ekspertiz öner.
 
 Araç Verileri:
 ${carDataText}
 `;
 
-  const response =
-    await axios.post(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        model:
-          "deepseek/deepseek-chat-v3-0324:free",
-
-        messages: [
-          {
-            role: "system",
-            content:
-              systemPrompt,
-          },
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          "Content-Type":
-            "application/json",
+  const response = await axios.post(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      model: "deepseek/deepseek-chat-v3-0324:free",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
         },
-      }
-    );
+        ...recentHistory,
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+      temperature: 0.35,
+      max_tokens: 1200,
+    },
+    {
+      timeout: 25000,
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   return {
-    answer:
-      response.data.choices[0]
-        .message.content,
-
+    answer: response.data.choices[0].message.content,
     mode: dataSourceMode,
-
-    matchedCars:
-      relevantCars.length,
+    matchedCars: relevantCars.length,
   };
 };
 
-const chatWithAI = async (
-  req,
-  res
-) => {
+const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
 
     if (!message) {
       return res.status(400).json({
         success: false,
-        message:
-          "Mesaj alanı zorunludur",
+        message: "Mesaj alanı zorunludur",
       });
     }
 
-    const cars =
-      await getCarsFromDatabase();
+    const userId = req.user?.uid || "anonymous";
 
-    const aiResult =
-      await generateAIAnswer({
-        message,
-        cars,
-      });
+    const cars = await getCarsFromDatabase();
+
+    const aiResult = await generateAIAnswer({
+      message,
+      cars,
+      userId,
+    });
 
     await saveChatHistory({
-      userId:
-        req.user?.uid || "anonymous",
+      userId,
       message,
       answer: aiResult.answer,
     });
@@ -270,45 +244,39 @@ const chatWithAI = async (
   } catch (error) {
     console.error(
       "AI CHAT ERROR:",
-      error.response?.data ||
-        error.message
+      error.response?.data || error.message
     );
 
     return res.status(500).json({
       success: false,
-      message:
-        "AI cevabı alınamadı",
+      message: "AI cevabı alınamadı",
     });
   }
 };
 
-const recommendCars = async (
-  req,
-  res
-) => {
+const recommendCars = async (req, res) => {
   try {
     const { message } = req.body;
 
     if (!message) {
       return res.status(400).json({
         success: false,
-        message:
-          "Mesaj alanı zorunludur",
+        message: "Mesaj alanı zorunludur",
       });
     }
 
-    const cars =
-      await getCarsFromDatabase();
+    const userId = req.user?.uid || "anonymous";
 
-    const aiResult =
-      await generateAIAnswer({
-        message,
-        cars,
-      });
+    const cars = await getCarsFromDatabase();
+
+    const aiResult = await generateAIAnswer({
+      message,
+      cars,
+      userId,
+    });
 
     await saveChatHistory({
-      userId:
-        req.user?.uid || "anonymous",
+      userId,
       message,
       answer: aiResult.answer,
     });
@@ -320,14 +288,12 @@ const recommendCars = async (
   } catch (error) {
     console.error(
       "AI RECOMMEND ERROR:",
-      error.response?.data ||
-        error.message
+      error.response?.data || error.message
     );
 
     return res.status(500).json({
       success: false,
-      message:
-        "Araç önerisi alınamadı",
+      message: "Araç önerisi alınamadı",
     });
   }
 };
