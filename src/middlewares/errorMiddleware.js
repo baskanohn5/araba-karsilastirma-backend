@@ -1,9 +1,21 @@
 const errorMiddleware = (err, req, res, next) => {
-  console.error("GLOBAL ERROR:", err);
+  const statusCode =
+    err.statusCode ||
+    err.status ||
+    500;
 
-  const statusCode = err.status || 500;
+  const isProduction =
+    process.env.NODE_ENV === "production";
 
-  if (process.env.NODE_ENV === "development") {
+  console.error("GLOBAL ERROR:", {
+    message: err.message,
+    statusCode,
+    path: req.originalUrl,
+    method: req.method,
+    time: new Date().toISOString(),
+  });
+
+  if (!isProduction) {
     return res.status(statusCode).json({
       success: false,
       message: err.message || "Sunucu hatası",
@@ -11,9 +23,12 @@ const errorMiddleware = (err, req, res, next) => {
     });
   }
 
-  res.status(statusCode).json({
+  return res.status(statusCode).json({
     success: false,
-    message: "Sunucu hatası oluştu",
+    message:
+      statusCode >= 500
+        ? "Sunucu hatası oluştu"
+        : err.message || "İstek işlenemedi",
   });
 };
 

@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const swaggerUi = require("swagger-ui-express");
 
 const swaggerSpec = require("./docs/swagger");
@@ -24,6 +25,12 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5000",
@@ -36,7 +43,10 @@ const allowedOrigins = [
   "http://127.0.0.1:5001",
   "http://127.0.0.1:15453",
   "http://127.0.0.1:32586",
-];
+
+  "https://autocompare-backend.onrender.com",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(
   cors({
@@ -57,7 +67,7 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(null, true);
+      return callback(null, false);
     },
 
     credentials: true,
@@ -102,16 +112,17 @@ app.get("/health", (req, res) => {
     success: true,
     status: "OK",
     uptime: process.uptime(),
-    timestamp:
-      new Date().toISOString(),
+    timestamp: new Date().toISOString(),
   });
 });
 
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec)
-);
+if (process.env.NODE_ENV !== "production") {
+  app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec)
+  );
+}
 
 app.use(apiLimiter);
 
@@ -149,6 +160,14 @@ app.use(
   "/api/admin",
   adminRoutes
 );
+
+app.use((req, res) => {
+  return res.status(404).json({
+    success: false,
+    message: "Endpoint bulunamadı",
+    path: req.originalUrl,
+  });
+});
 
 app.use(errorMiddleware);
 

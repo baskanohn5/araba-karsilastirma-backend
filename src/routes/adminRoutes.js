@@ -15,7 +15,11 @@ router.get(
     return res.json({
       success: true,
       message: "Admin erişimi başarılı",
-      user: req.user,
+      user: {
+        uid: req.user?.uid,
+        email: req.user?.email,
+        admin: req.user?.admin === true,
+      },
     });
   }
 );
@@ -26,43 +30,33 @@ router.get(
   adminMiddleware,
   async (req, res) => {
     try {
-      const carsSnapshot =
-        await db.collection("cars").get();
-
-      const favoritesSnapshot =
-        await db.collection("favorites").get();
-
-      const compareSnapshot =
-        await db
-          .collection("compareHistory")
-          .get();
-
-      const aiSnapshot =
-        await db
-          .collection("chatHistory")
-          .get();
+      const [
+        carsSnapshot,
+        favoritesSnapshot,
+        compareSnapshot,
+        aiSnapshot,
+      ] = await Promise.all([
+        db.collection("cars").get(),
+        db.collection("favorites").get(),
+        db.collection("compareResults").get(),
+        db.collection("chatHistory").get(),
+      ]);
 
       return res.json({
         success: true,
-
         data: {
-          totalCars:
-            carsSnapshot.size,
-
-          totalFavorites:
-            favoritesSnapshot.size,
-
-          totalCompareHistory:
-            compareSnapshot.size,
-
-          totalAiChats:
-            aiSnapshot.size,
+          totalCars: carsSnapshot.size,
+          totalFavorites: favoritesSnapshot.size,
+          totalCompareHistory: compareSnapshot.size,
+          totalAiChats: aiSnapshot.size,
         },
       });
     } catch (error) {
+      console.error("ADMIN STATS ERROR:", error);
+
       return res.status(500).json({
         success: false,
-        message: error.message,
+        message: "Admin istatistikleri alınamadı",
       });
     }
   }
